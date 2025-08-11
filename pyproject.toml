@@ -1,20 +1,33 @@
 [project]
 name = "cloud-billing"
 version = "0.1.0"
-description = "this is a package that used to fetch Alibaba Cloud/Azure Cloud/AWS cloud billing"
+description = "A package to fetch billing information from Alibaba Cloud, Azure Cloud, and AWS"
 authors = [
-    {name = "Kai Yang",email = "kaiyang939325@gmail.com"}
+    {name = "Kai Yang", email = "kaiyang939325@gmail.com"}
 ]
-license = {text = "GNU"}
+license = "GPL-3.0-or-later"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "azure-mgmt-consumption (>=10.0.0,<11.0.0)",
-    "azure-identity (>=1.24.0,<2.0.0)",
-    "azure-mgmt-resource (>=24.0.0,<25.0.0)",
-    "aliyun-python-sdk-core (>=2.16.0,<3.0.0)",
-    "pydantic (>=2.11.7,<3.0.0)"
+    "azure-mgmt-consumption>=10.0.0,<11.0.0",
+    "azure-identity>=1.24.0,<2.0.0",
+    "azure-mgmt-resource>=24.0.0,<25.0.0",
+    "aliyun-python-sdk-core>=2.16.0,<3.0.0",
+    "pydantic>=2.11.7,<3.0.0"
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/visionary-future/cloud-billing"
+Repository = "https://github.com/visionary-future/cloud-billing"
+Issues = "https://github.com/visionary-future/cloud-billing/issues"
 
 [tool.poetry]
 
@@ -23,6 +36,10 @@ black = "^25.1.0"
 pre-commit = "^4.3.0"
 pytest = "^8.4.1"
 
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*", "dist*", "build*"]
+
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
