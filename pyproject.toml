@@ -13,7 +13,8 @@ dependencies = [
     "azure-identity>=1.24.0,<2.0.0",
     "azure-mgmt-resource>=24.0.0,<25.0.0",
     "aliyun-python-sdk-core>=2.16.0,<3.0.0",
-    "pydantic>=2.11.7,<3.0.0"
+    "pydantic>=2.11.7,<3.0.0",
+    "requests>=2.31.0"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -35,6 +36,8 @@ Issues = "https://github.com/visionary-future/cloud-billing/issues"
 black = "^25.1.0"
 pre-commit = "^4.3.0"
 pytest = "^8.4.1"
+pytest-cov = "^6.1.0"
+pytest-xdist = "^3.8.0"
 
 [tool.setuptools.packages.find]
 where = ["."]
