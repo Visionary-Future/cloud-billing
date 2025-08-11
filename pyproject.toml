@@ -1,0 +1,28 @@
+[project]
+name = "cloud-billing"
+version = "0.1.0"
+description = "this is a package that used to fetch Alibaba Cloud/Azure Cloud/AWS cloud billing"
+authors = [
+    {name = "Kai Yang",email = "kaiyang939325@gmail.com"}
+]
+license = {text = "GNU"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-mgmt-consumption (>=10.0.0,<11.0.0)",
+    "azure-identity (>=1.24.0,<2.0.0)",
+    "azure-mgmt-resource (>=24.0.0,<25.0.0)",
+    "aliyun-python-sdk-core (>=2.16.0,<3.0.0)",
+    "pydantic (>=2.11.7,<3.0.0)"
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+pre-commit = "^4.3.0"
+pytest = "^8.4.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
