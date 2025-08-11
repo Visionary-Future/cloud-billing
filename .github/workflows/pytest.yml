@@ -43,7 +43,7 @@ jobs:
         fail_ci_if_error: false
 
     - name: Upload coverage reports as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report-${{ matrix.python-version }}
         path: htmlcov/
