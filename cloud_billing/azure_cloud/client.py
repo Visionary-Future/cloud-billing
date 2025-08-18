@@ -157,6 +157,7 @@ class AzureCloudClient:
                 return None, error_msg
 
         except requests.exceptions.RequestException as e:
+            print(e)
             return None, f"请求异常: {str(e)}"
         except Exception as e:
             return None, f"处理请求时发生错误: {str(e)}"
@@ -199,7 +200,7 @@ class AzureCloudClient:
             return None, f"处理请求时发生错误: {str(e)}"
 
     def get_ri_csv_url(
-        self, location_url: str, token: Optional[str] = None, max_retries: int = 10
+        self, location_url: str, token: Optional[str] = None, max_retries: int = 1
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         获取RI账单CSV文件下载URL
@@ -211,17 +212,17 @@ class AzureCloudClient:
         use_token = token if token else self._current_token
         if not use_token:
             return None, "未提供有效的访问令牌"
-
+        print(f"使用的访问令牌: {use_token}")
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
             retry_count = 0
 
             while retry_count < max_retries:
                 response = self.session.get(location_url, headers=headers)
-
                 if response.status_code == 200:
                     try:
                         blob_info = self._parse_blob_response(response.text)
+
                         if blob_info.status == "Completed" and blob_info.manifest.get("blobs"):
                             return blob_info.manifest["blobs"][0].get("blobLink"), None
                         elif blob_info.status != "Completed":
@@ -236,6 +237,7 @@ class AzureCloudClient:
 
             return None, f"超过最大重试次数({max_retries})，仍未获取到CSV下载链接"
         except requests.exceptions.RequestException as e:
+            print(e)
             return None, f"请求异常: {str(e)}"
         except Exception as e:
             return None, f"处理请求时发生错误: {str(e)}"
@@ -261,8 +263,7 @@ class AzureCloudClient:
         if not use_token:
             return None, "未提供有效的访问令牌"
         try:
-            headers = {"Authorization": f"Bearer {use_token}"}
-            response = self.session.get(csv_url, headers=headers)
+            response = self.session.get(csv_url)
             if response.status_code == 200:
                 return response.content, None
             else:
@@ -278,34 +279,36 @@ class AzureCloudClient:
         except Exception as e:
             return None, f"处理请求时发生错误: {str(e)}"
 
-    def get_ri_csv_as_json(
-        self, location_url: str, token: Optional[str] = None, max_retries: int = 10
-    ) -> Tuple[Optional[list[dict]], Optional[str]]:
+    def get_ri_csv_as_json(self, location_url: str, token: Optional[str] = None, max_retries: int = 10):
         """
         获取RI账单CSV内容并转换为JSON格式
         :param location_url: 从get_ri_location获取的位置URL
         :param token: 访问令牌(可选)
         :param max_retries: 最大轮询次数(默认10次)
-        :return: (json_data, error) 元组
+        :yield: (row_data, error) 元组，成功时为(dict, None)，失败时为(None, error_message)
         """
         csv_url, error = self.get_ri_csv_url(location_url, token, max_retries)
         if error:
-            return None, f"获取CSV下载URL失败: {error}"
+            yield None, f"获取CSV下载URL失败: {error}"
+            return
         if not csv_url:
-            return None, "未能获取有效的CSV下载URL"
+            yield None, "未能获取有效的CSV下载URL"
+            return
 
         csv_content, error = self.download_ri_csv(csv_url, token)
         if error:
-            return None, f"下载CSV内容失败: {error}"
+            yield None, f"下载CSV内容失败: {error}"
+            return
         if not csv_content:
-            return None, "下载的CSV内容为空"
+            yield None, "下载的CSV内容为空"
+            return
 
         try:
             csv_str = csv_content.decode("utf-8-sig")
             csv_reader = csv.DictReader(csv_str.splitlines())
-            json_data = [row for row in csv_reader]
-            return json_data, None
+            for row in csv_reader:
+                yield row, None
         except UnicodeDecodeError as e:
-            return None, f"CSV解码失败: {str(e)}"
+            yield None, f"CSV解码失败: {str(e)}"
         except Exception as e:
-            return None, f"CSV转换为JSON时出错: {str(e)}"
+            yield None, f"CSV转换为JSON时出错: {str(e)}"
