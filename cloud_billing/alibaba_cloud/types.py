@@ -1,6 +1,12 @@
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
+
+
+class SUBSCRIPTION_TYPE(Enum):
+    SUBSCRIPTION = "Subscription"
+    PAYASYOUGO = "PayAsYouGo"
 
 
 class QueryInstanceBillItem(BaseModel):
