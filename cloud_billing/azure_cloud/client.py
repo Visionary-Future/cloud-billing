@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, Tuple
 import requests
 from requests_toolbelt.multipart import encoder
 
+from .types import BillingRecord
+
 
 @dataclass
 class BlobInfo:
@@ -307,7 +309,7 @@ class AzureCloudClient:
             csv_str = csv_content.decode("utf-8-sig")
             csv_reader = csv.DictReader(csv_str.splitlines())
             for row in csv_reader:
-                yield row, None
+                yield BillingRecord.model_validate(row), None
         except UnicodeDecodeError as e:
             yield None, f"CSV解码失败: {str(e)}"
         except Exception as e:
