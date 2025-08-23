@@ -1,0 +1,73 @@
+site_name: Cloud Billing Documentation
+site_description: A package to fetch billing information from Alibaba Cloud, Azure Cloud, and AWS
+site_url: https://visionary-future.github.io/cloud-billing/
+repo_url: https://github.com/visionary-future/cloud-billing
+repo_name: visionary-future/cloud-billing
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_toc_entry: false
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - Cloud Providers:
+    - Alibaba Cloud: providers/alibaba-cloud.md
+    - AWS: providers/aws.md
+    - Azure: providers/azure.md
+    - Huawei Cloud: providers/huawei-cloud.md
+  - API Reference:
+    - Alibaba Cloud: api/alibaba-cloud.md
+    - AWS: api/aws.md
+    - Azure: api/azure.md
+    - Huawei Cloud: api/huawei-cloud.md
+    - Common Utilities: api/common.md
+  - Examples: examples.md
+  - Contributing: contributing.md
