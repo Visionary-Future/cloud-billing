@@ -44,13 +44,6 @@ billing_data = client.fetch_instance_bill_by_billing_cycle(
 )
 ```
 
-## Documentation Structure
-
-- **[Getting Started](getting-started/installation.md)** - Installation and basic setup
-- **[Cloud Providers](providers/alibaba-cloud.md)** - Provider-specific guides
-- **[API Reference](api/alibaba-cloud.md)** - Detailed API documentation
-- **[Examples](examples.md)** - Code examples and use cases
-
 ## License
 
 This project is licensed under the GPL-3.0-or-later License - see the [LICENSE](https://github.com/visionary-future/cloud-billing/blob/main/LICENSE) file for details.
