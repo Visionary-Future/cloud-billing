@@ -31,16 +31,21 @@ Issues = "https://github.com/visionary-future/cloud-billing/issues"
 
 [tool.poetry]
 
+[[tool.poetry.source]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
+
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
 pre-commit = "^4.3.0"
 pytest = "^8.4.1"
 pytest-cov = "^6.1.0"
 pytest-xdist = "^3.8.0"
-mkdocs = "^1.6.0"
-mkdocs-material = "^9.5.0"
-mkdocstrings = "^0.25.0"
-mkdocstrings-python = "^1.11.0"
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.6.18"
+mkdocstrings = "^0.30.0"
+mkdocstrings-python = "^1.17.0"
 
 [tool.setuptools.packages.find]
 where = ["."]
