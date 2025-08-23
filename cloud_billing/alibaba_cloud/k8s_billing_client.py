@@ -28,14 +28,13 @@ class K8sBillingClient:
         if config.headers:
             self.session.headers.update(config.headers)
 
-    def query_monthly_cost(self, year: int, month: int, **kwargs) -> Dict[str, Any]:
+    def query_monthly_cost(self, year: int, month: int) -> Dict[str, Any]:
         """
         Query monthly cost data from Kubecost for Alibaba Cloud
 
         Args:
             year: Year (e.g., 2024)
             month: Month (1-12)
-            **kwargs: Additional query parameters
 
         Returns:
             Dict containing cost data
@@ -46,7 +45,7 @@ class K8sBillingClient:
         else:
             end_date = datetime(year, month + 1, 1)
 
-        return self._query_cost_range(start_date, end_date, **kwargs)
+        return self._query_cost_range(start_date, end_date)
 
     def _query_cost_range(
         self, start_date: datetime, end_date: datetime, aggregate_by: str = "cluster", step: str = "1d"
