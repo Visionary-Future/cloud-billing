@@ -1,6 +1,6 @@
 site_name: Cloud Billing Documentation
 site_description: A package to fetch billing information from Alibaba Cloud, Azure Cloud, and AWS
-site_url: https://visionary-future.github.io/cloud-billing/
+site_url: https://cloud-billing.visionary-future.com/
 repo_url: https://github.com/visionary-future/cloud-billing
 repo_name: visionary-future/cloud-billing
 
