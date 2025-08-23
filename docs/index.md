@@ -39,9 +39,8 @@ client = AlibabaBillingClient(
     region_id="cn-hangzhou"
 )
 
-billing_data = client.get_billing_data(
-    start_date="2024-01-01",
-    end_date="2024-01-31"
+billing_data = client.fetch_instance_bill_by_billing_cycle(
+    start_date="2024-01"
 )
 ```
 
