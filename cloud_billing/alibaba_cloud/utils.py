@@ -6,8 +6,8 @@ def parse_aliyun_tag(tag: str) -> Dict[str, str]:
     解析阿里云资源标签字符串为字典格式
 
     支持两种格式：
-    1. MDLZ格式: 'key:Environment value:PROD; key:Role value:App; key:Application value:LSZL|APP2|'
-    2. Carlsberg格式: 'key:Environment value:Prod; key:Application_Owner value:Vanessa.WC.Jiang@carlsberg.asia;'
+    1. 'key:Environment value:PROD; key:Role value:App; key:Application value:xxxx'
+    2. 'key:Environment value:Prod; key:Application_Owner value:xxxxx;'
 
     Args:
         tag: 原始标签字符串
