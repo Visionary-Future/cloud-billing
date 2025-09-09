@@ -32,7 +32,7 @@ class AlibabaCloudClient:
         self.access_key_secret = access_key_secret
         self.region_id = region_id
         self.credentials = AccessKeyCredential(self.access_key_id, self.access_key_secret)
-        self.client = AcsClient(region_id=region_id, credential=self.credentials)
+        self.client = AcsClient(region_id=region_id, credential=self.credentials, timeout=3000)
 
     def get_credentials(self) -> Dict[str, str]:
         return {
