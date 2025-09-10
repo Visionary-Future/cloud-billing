@@ -94,7 +94,7 @@ class AlibabaCloudClient:
         request.set_accept_format("json")
         request.set_domain("business.aliyuncs.com")
         request.set_method("POST")
-        request.set_protocol_type("https")
+        request.set_protocol_type("http")
         request.set_version("2017-12-14")
         request.set_action_name("DescribeInstanceBill")
 
