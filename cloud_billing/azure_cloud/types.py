@@ -11,6 +11,7 @@ class ChargeType(str, Enum):
     USAGE = "Usage"
     REFUND = "Refund"
     OTHER = "Other"
+    UNUSED_RESERVATION = "UnusedReservation"
 
 
 class BillingRecord(BaseModel):
