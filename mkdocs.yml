@@ -70,4 +70,5 @@ nav:
     - Huawei Cloud: api/huawei-cloud.md
     - Common Utilities: api/common.md
   - Examples: examples.md
+  - Kubecost Example: examples_kubecost.md
   - Contributing: contributing.md
