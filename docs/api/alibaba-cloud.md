@@ -5,10 +5,6 @@
       show_root_heading: true
       show_source: false
 
-::: cloud_billing.alibaba_cloud.k8s_billing_client
-    options:
-      show_root_heading: true
-      show_source: false
 
 ::: cloud_billing.alibaba_cloud.types
     options:
