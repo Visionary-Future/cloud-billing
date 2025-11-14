@@ -7,10 +7,7 @@ This guide will help you get started with the Cloud Billing package quickly.
 ### Alibaba Cloud
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
-
-# Initialize the client
-client = AlibabaBillingClient(
+client = AlibabaCloudClient(
     access_key_id="your_access_key_id",
     access_key_secret="your_access_key_secret",
     region_id="cn-hangzhou"  # or your preferred region
@@ -28,10 +25,10 @@ print(f"Total cost: {billing_data.total_cost}")
 ### AWS
 
 ```python
-from cloud_billing.aws_cloud import AWSBillingClient
+from cloud_billing.aws_cloud import AWSCloudClient
 
 # Initialize the client (uses AWS credentials from environment or AWS config)
-client = AWSBillingClient(
+client = AWSCloudClient(
     region_name="us-east-1"
 )
 
@@ -46,10 +43,10 @@ cost_data = client.get_cost_and_usage(
 ### Azure
 
 ```python
-from cloud_billing.azure_cloud import AzureBillingClient
+from cloud_billing.azure_cloud import AzureCloudClient
 
 # Initialize the client
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="your_subscription_id",
     tenant_id="your_tenant_id",
     client_id="your_client_id",
@@ -66,10 +63,10 @@ billing_data = client.get_billing_data(
 ### Huawei Cloud
 
 ```python
-from cloud_billing.huawei_cloud import HuaweiBillingClient
+from cloud_billing.huawei_cloud import HuaweiCloudClient
 
 # Initialize the client
-client = HuaweiBillingClient(
+client = HuaweiCloudClient(
     access_key_id="your_access_key_id",
     secret_access_key="your_secret_access_key",
     region="cn-north-1"
@@ -110,10 +107,10 @@ export HUAWEI_SECRET_ACCESS_KEY="your_secret_access_key"
 Then initialize clients without explicit credentials:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 
 # Will automatically use environment variables
-client = AlibabaBillingClient()
+client = AlibabaCloudClient()
 ```
 
 ## Error Handling
@@ -121,7 +118,7 @@ client = AlibabaBillingClient()
 The package includes custom exceptions for better error handling:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 from cloud_billing.alibaba_cloud.exceptions import (
     AlibabaBillingException,
     AuthenticationException,
@@ -129,7 +126,7 @@ from cloud_billing.alibaba_cloud.exceptions import (
 )
 
 try:
-    client = AlibabaBillingClient()
+    client = AlibabaCloudClient()
     billing_data = client.get_billing_data("2024-01-01", "2024-01-31")
 except AuthenticationException as e:
     print(f"Authentication failed: {e}")

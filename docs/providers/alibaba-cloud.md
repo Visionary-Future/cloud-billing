@@ -15,10 +15,10 @@ The Alibaba Cloud billing client provides comprehensive access to billing and co
 ### Client Initialization
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 
 # Using explicit credentials
-client = AlibabaBillingClient(
+client = AlibabaCloudClient(
     access_key_id="your_access_key_id",
     access_key_secret="your_access_key_secret",
     region_id="cn-hangzhou"
@@ -26,7 +26,7 @@ client = AlibabaBillingClient(
 
 # Using environment variables
 # Set ALIBABA_ACCESS_KEY_ID and ALIBABA_ACCESS_KEY_SECRET
-client = AlibabaBillingClient()
+client = AlibabaCloudClient()
 ```
 
 ### Getting Billing Data
@@ -98,7 +98,7 @@ regions = [
     "eu-central-1"    # Germany (Frankfurt)
 ]
 
-client = AlibabaBillingClient(region_id="cn-hangzhou")
+client = AlibabaCloudClient(region_id="cn-hangzhou")
 ```
 
 ### Authentication
@@ -107,7 +107,7 @@ Multiple authentication methods are supported:
 
 #### 1. Direct Credentials
 ```python
-client = AlibabaBillingClient(
+client = AlibabaCloudClient(
     access_key_id="LTAI...",
     access_key_secret="your_secret"
 )
@@ -121,7 +121,7 @@ export ALIBABA_REGION_ID="cn-hangzhou"
 ```
 
 ```python
-client = AlibabaBillingClient()  # Automatically uses env vars
+client = AlibabaCloudClient()  # Automatically uses env vars
 ```
 
 #### 3. Configuration File
@@ -246,7 +246,7 @@ Enable debug logging to troubleshoot issues:
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-client = AlibabaBillingClient()
+client = AlibabaCloudClient()
 ```
 
 ## See Also

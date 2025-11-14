@@ -31,9 +31,9 @@ pip install cloud-billing
 Get billing data from Alibaba Cloud:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 
-client = AlibabaBillingClient(
+client = AlibabaCloudClient(
     access_key_id="your_access_key",
     access_key_secret="your_secret_key",
     region_id="cn-hangzhou"

@@ -15,10 +15,10 @@ The Azure billing client provides access to cost management and billing data thr
 ### Client Initialization
 
 ```python
-from cloud_billing.azure_cloud import AzureBillingClient
+from cloud_billing.azure_cloud import AzureCloudClient
 
 # Using service principal credentials
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="your_subscription_id",
     tenant_id="your_tenant_id",
     client_id="your_client_id",
@@ -26,12 +26,12 @@ client = AzureBillingClient(
 )
 
 # Using Azure CLI authentication
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="your_subscription_id"
 )
 
 # Using managed identity (when running on Azure)
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="your_subscription_id",
     use_managed_identity=True
 )
@@ -79,7 +79,7 @@ print(f"Resource group cost: {billing_data.total_cost}")
 
 #### 1. Service Principal
 ```python
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="12345678-1234-1234-1234-123456789012",
     tenant_id="87654321-4321-4321-4321-210987654321",
     client_id="abcd1234-ab12-cd34-ef56-1234567890ab",
@@ -96,7 +96,7 @@ export AZURE_CLIENT_SECRET="your_client_secret"
 ```
 
 ```python
-client = AzureBillingClient()  # Automatically uses env vars
+client = AzureCloudClient()  # Automatically uses env vars
 ```
 
 #### 3. Azure CLI
@@ -105,7 +105,7 @@ az login
 ```
 
 ```python
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="your_subscription_id",
     use_cli_auth=True
 )
@@ -114,7 +114,7 @@ client = AzureBillingClient(
 #### 4. Managed Identity
 ```python
 # When running on Azure VM/Container/Function
-client = AzureBillingClient(
+client = AzureCloudClient(
     subscription_id="your_subscription_id",
     use_managed_identity=True
 )
