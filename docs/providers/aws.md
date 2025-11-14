@@ -15,20 +15,20 @@ The AWS billing client provides access to cost and usage data through AWS Cost E
 ### Client Initialization
 
 ```python
-from cloud_billing.aws_cloud import AWSBillingClient
+from cloud_billing.aws_cloud import AWSCloudClient
 
 # Using explicit credentials
-client = AWSBillingClient(
+client = AWSCloudClient(
     aws_access_key_id="your_access_key_id",
     aws_secret_access_key="your_secret_access_key",
     region_name="us-east-1"
 )
 
 # Using AWS credentials file or environment variables
-client = AWSBillingClient(region_name="us-east-1")
+client = AWSCloudClient(region_name="us-east-1")
 
 # Using IAM roles (when running on EC2)
-client = AWSBillingClient()
+client = AWSCloudClient()
 ```
 
 ### Getting Cost and Usage Data
@@ -104,7 +104,7 @@ AWS Cost Explorer is available in specific regions:
 
 ```python
 # Cost Explorer is primarily available in us-east-1
-client = AWSBillingClient(region_name="us-east-1")
+client = AWSCloudClient(region_name="us-east-1")
 ```
 
 ## Advanced Features

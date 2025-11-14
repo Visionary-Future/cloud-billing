@@ -15,10 +15,10 @@ The Huawei Cloud billing client provides access to billing and usage data throug
 ### Client Initialization
 
 ```python
-from cloud_billing.huawei_cloud import HuaweiBillingClient
+from cloud_billing.huawei_cloud import HuaweiCloudClient
 
 # Using explicit credentials
-client = HuaweiBillingClient(
+client = HuaweiCloudClient(
     access_key_id="your_access_key_id",
     secret_access_key="your_secret_access_key",
     region="cn-north-1",
@@ -26,7 +26,7 @@ client = HuaweiBillingClient(
 )
 
 # Using environment variables
-client = HuaweiBillingClient()
+client = HuaweiCloudClient()
 ```
 
 ### Getting Billing Data
@@ -106,7 +106,7 @@ regions = [
     "ap-southeast-3", # Singapore
 ]
 
-client = HuaweiBillingClient(region="cn-north-1")
+client = HuaweiCloudClient(region="cn-north-1")
 ```
 
 ## Advanced Features
@@ -119,7 +119,7 @@ projects = ["project-1", "project-2", "project-3"]
 consolidated_data = []
 
 for project_id in projects:
-    client = HuaweiBillingClient(project_id=project_id)
+    client = HuaweiCloudClient(project_id=project_id)
     billing_data = client.get_billing_data("2024-01-01", "2024-01-31")
 
     consolidated_data.append({

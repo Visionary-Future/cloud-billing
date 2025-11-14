@@ -31,9 +31,9 @@ pip install cloud-billing
 Get billing data from Alibaba Cloud:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 
-client = AlibabaBillingClient(
+client = AlibabaCloudClient(
     access_key_id="your_access_key",
     access_key_secret="your_secret_key",
     region_id="cn-hangzhou"
@@ -50,6 +50,8 @@ billing_data = client.fetch_instance_bill_by_billing_cycle(
 - **[Cloud Providers](providers/alibaba-cloud.md)** - Provider-specific guides
 - **[API Reference](api/alibaba-cloud.md)** - Detailed API documentation
 - **[Examples](examples.md)** - Code examples and use cases
+ - **[Examples](examples.md)** - Code examples and use cases
+ - **[Kubecost Allocation Example](examples_kubecost.md)** - Quick script to fetch Kubecost allocation data
 
 ## License
 

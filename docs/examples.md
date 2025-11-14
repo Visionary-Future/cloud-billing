@@ -7,15 +7,15 @@ This page provides practical examples of using the Cloud Billing package.
 Compare costs across different cloud providers:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
-from cloud_billing.aws_cloud import AWSBillingClient
-from cloud_billing.azure_cloud import AzureBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
+from cloud_billing.aws_cloud import AWSCloudClient
+from cloud_billing.azure_cloud import AzureCloudClient
 
 async def compare_cloud_costs(start_date: str, end_date: str):
     # Initialize clients
-    alibaba_client = AlibabaBillingClient()
-    aws_client = AWSBillingClient()
-    azure_client = AzureBillingClient()
+    alibaba_client = AlibabaCloudClient()
+    aws_client = AWSCloudClient()
+    azure_client = AzureCloudClient()
 
     # Get billing data from all providers
     alibaba_data = alibaba_client.get_billing_data(start_date, end_date)
@@ -43,10 +43,10 @@ Track costs over multiple months:
 
 ```python
 from datetime import datetime, timedelta
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 
 def track_monthly_costs(months: int = 6):
-    client = AlibabaBillingClient()
+    client = AlibabaCloudClient()
     monthly_costs = []
 
     for i in range(months):
@@ -79,10 +79,10 @@ for month_data in costs:
 Analyze costs by service for Alibaba Cloud:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 
 def analyze_service_costs(start_date: str, end_date: str):
-    client = AlibabaBillingClient()
+    client = AlibabaCloudClient()
     billing_data = client.get_billing_data(start_date, end_date)
 
     # Group costs by service
@@ -166,12 +166,12 @@ for namespace, cost in cluster_costs['namespace_breakdown'].items():
 Simple cost alerting based on thresholds:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 import smtplib
 from email.mime.text import MIMEText
 
 def check_cost_alerts(threshold: float, email_to: str):
-    client = AlibabaBillingClient()
+    client = AlibabaCloudClient()
 
     # Get current month costs
     from datetime import datetime
@@ -221,13 +221,13 @@ alert_triggered = check_cost_alerts(1000.0, "admin@yourcompany.com")
 Process billing data for multiple accounts:
 
 ```python
-from cloud_billing.alibaba_cloud import AlibabaBillingClient
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
 import concurrent.futures
 from typing import List, Dict
 
 def process_account_billing(account_config: Dict) -> Dict:
     """Process billing for a single account"""
-    client = AlibabaBillingClient(
+    client = AlibabaCloudClient(
         access_key_id=account_config['access_key_id'],
         access_key_secret=account_config['access_key_secret'],
         region_id=account_config.get('region_id', 'cn-hangzhou')
