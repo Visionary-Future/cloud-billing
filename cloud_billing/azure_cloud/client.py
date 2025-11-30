@@ -202,7 +202,7 @@ class AzureCloudClient:
             return None, f"处理请求时发生错误: {str(e)}"
 
     def get_ri_csv_url(
-        self, location_url: str, token: Optional[str] = None, max_retries: int = 1
+        self, location_url: str, token: Optional[str] = None, max_retries: int = 10
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         获取RI账单CSV文件下载URL
@@ -239,7 +239,6 @@ class AzureCloudClient:
 
             return None, f"超过最大重试次数({max_retries})，仍未获取到CSV下载链接"
         except requests.exceptions.RequestException as e:
-            print(e)
             return None, f"请求异常: {str(e)}"
         except Exception as e:
             return None, f"处理请求时发生错误: {str(e)}"

@@ -71,4 +71,6 @@ nav:
     - Common Utilities: api/common.md
   - Examples: examples.md
   - Kubecost Example: examples_kubecost.md
+  - Scripts:
+    - Export Billing to CSV: scripts_export_csv.md
   - Contributing: contributing.md
