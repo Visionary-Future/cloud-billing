@@ -14,12 +14,10 @@ client = AlibabaCloudClient(
 )
 
 # Get billing data for a date range
-billing_data = client.get_billing_data(
-    start_date="2024-01-01",
-    end_date="2024-01-31"
+billing_data = client.fetch_instance_bill_by_billing_cycle(
+    billing_cycle="2024-01",
 )
 
-print(f"Total cost: {billing_data.total_cost}")
 ```
 
 ### AWS
@@ -127,7 +125,7 @@ from cloud_billing.alibaba_cloud.exceptions import (
 
 try:
     client = AlibabaCloudClient()
-    billing_data = client.get_billing_data("2024-01-01", "2024-01-31")
+    billing_data = client.fetch_instance_bill_by_billing_cycle("2024-01")
 except AuthenticationException as e:
     print(f"Authentication failed: {e}")
 except RateLimitException as e:
