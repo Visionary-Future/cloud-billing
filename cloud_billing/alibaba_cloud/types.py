@@ -10,17 +10,17 @@ class SUBSCRIPTION_TYPE(Enum):
 
 
 class QueryInstanceBillItem(BaseModel):
-    AfterDiscountAmount: float
+    AfterDiscountAmount: Optional[float] = 0.0
     InstanceSpec: str
     ProductName: str
     InstanceID: str
     BillAccountID: str
-    DeductedByCashCoupons: float
+    DeductedByCashCoupons: Optional[float] = 0.0
     BillingDate: Optional[str]
     ListPriceUnit: Optional[str]
-    PaymentAmount: float
+    PaymentAmount: Optional[float] = 0.0
     ListPrice: Optional[str]
-    DeductedByPrepaidCard: float
+    DeductedByPrepaidCard: Optional[float] = 0.0
     InvoiceDiscount: float
     Item: str
     SubscriptionType: str
@@ -31,15 +31,15 @@ class QueryInstanceBillItem(BaseModel):
     ItemName: str
     CostUnit: str
     ResourceGroup: str
-    AdjustAmount: float
+    AdjustAmount: Optional[float] = 0.0
     BillingType: str
-    DeductedByCoupons: float
+    DeductedByCoupons: Optional[float] = 0.0
     Usage: Optional[str]
     ProductDetail: str
     ProductCode: str
     Zone: Optional[str]
     ProductType: str
-    OutstandingAmount: float
+    OutstandingAmount: Optional[float] = 0.0
     BizType: Optional[str]
     BillingItem: Optional[str]
     NickName: Optional[str]
@@ -55,7 +55,7 @@ class QueryInstanceBillItem(BaseModel):
     BillAccountName: str
     Region: str
     Tag: Optional[str]
-    CashAmount: float
+    CashAmount: Optional[float] = 0.0
 
 
 class QueryInstanceBillData(BaseModel):
