@@ -7,6 +7,8 @@ This guide will help you get started with the Cloud Billing package quickly.
 ### Alibaba Cloud
 
 ```python
+from cloud_billing.alibaba_cloud import AlibabaCloudClient
+
 client = AlibabaCloudClient(
     access_key_id="your_access_key_id",
     access_key_secret="your_access_key_secret",
@@ -18,24 +20,27 @@ billing_data = client.fetch_instance_bill_by_billing_cycle(
     billing_cycle="2024-01",
 )
 
+# Iterate through results
+for record in billing_data:
+    print(f"Product: {record.ProductName}")
+    print(f"Cost: {record.PreTaxAmount}")
 ```
 
-### AWS
+### AWS (Stub)
 
 ```python
 from cloud_billing.aws_cloud import AWSCloudClient
 
-# Initialize the client (uses AWS credentials from environment or AWS config)
-client = AWSCloudClient(
-    region_name="us-east-1"
-)
+# Initialize the client
+client = AWSCloudClient()
 
-# Get cost and usage data
-cost_data = client.get_cost_and_usage(
-    start_date="2024-01-01",
-    end_date="2024-01-31",
-    granularity="MONTHLY"
-)
+# Available methods (limited - stub implementation)
+region = client.get_region()
+client.set_region("us-east-1")
+error = client.connect()
+
+# Note: Full Cost Explorer integration is not yet implemented
+print("AWS billing support is under development")
 ```
 
 ### Azure
@@ -43,22 +48,32 @@ cost_data = client.get_cost_and_usage(
 ```python
 from cloud_billing.azure_cloud import AzureCloudClient
 
-# Initialize the client
+# Initialize the client (RI billing reports)
 client = AzureCloudClient(
-    subscription_id="your_subscription_id",
     tenant_id="your_tenant_id",
     client_id="your_client_id",
     client_secret="your_client_secret"
 )
 
-# Get billing data
-billing_data = client.get_billing_data(
+# Get access token
+token, error = client.get_access_token()
+
+# Request RI billing report
+location_url, error = client.get_ri_location(
+    billing_account_id="123456789",
     start_date="2024-01-01",
-    end_date="2024-01-31"
+    end_date="2024-01-31",
+    metric="ActualCost"
 )
+
+# Download and parse RI data
+for billing_record, error in client.get_ri_csv_as_json(location_url):
+    if not error:
+        print(f"Service: {billing_record.ProductName}")
+        print(f"Cost: {billing_record.PreTaxAmount}")
 ```
 
-### Huawei Cloud
+### Huawei Cloud (Stub)
 
 ```python
 from cloud_billing.huawei_cloud import HuaweiCloudClient
@@ -70,11 +85,12 @@ client = HuaweiCloudClient(
     region="cn-north-1"
 )
 
-# Get billing data
-billing_data = client.get_billing_data(
-    start_date="2024-01-01",
-    end_date="2024-01-31"
-)
+# Available methods (limited - stub implementation)
+error = client.connect()
+project_id = client.get_project_id()
+
+# Note: Full billing data support is under development
+print("Huawei Cloud billing support is under development")
 ```
 
 ## Environment Variables
@@ -113,7 +129,7 @@ client = AlibabaCloudClient()
 
 ## Error Handling
 
-The package includes custom exceptions for better error handling:
+### Alibaba Cloud
 
 ```python
 from cloud_billing.alibaba_cloud import AlibabaCloudClient
@@ -132,6 +148,43 @@ except RateLimitException as e:
     print(f"Rate limit exceeded: {e}")
 except AlibabaBillingException as e:
     print(f"Billing API error: {e}")
+```
+
+### Azure
+
+```python
+from cloud_billing.azure_cloud import AzureCloudClient
+
+client = AzureCloudClient(
+    tenant_id="your_tenant_id",
+    client_id="your_client_id",
+    client_secret="your_client_secret"
+)
+
+# Check for errors in return tuples
+token, error = client.get_access_token()
+if error:
+    print(f"Authentication error: {error}")
+
+# Handle CSV parsing errors
+for billing_record, error in client.get_ri_csv_as_json(location_url):
+    if error:
+        print(f"CSV parsing error: {error}")
+        continue
+    # Process record
+```
+
+### General Pattern
+
+Most methods return tuples of (result, error):
+
+```python
+result, error = client.some_method()
+if error:
+    print(f"Error: {error}")
+else:
+    # Process result
+    print(result)
 ```
 
 ## Next Steps
