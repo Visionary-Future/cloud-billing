@@ -4,11 +4,11 @@ The Alibaba Cloud billing client provides comprehensive access to billing and co
 
 ## Features
 
-- Standard billing data retrieval
-- Kubernetes cluster billing with namespace-level details
-- Multi-region support
-- Rate limiting and error handling
-- Comprehensive cost analysis
+- Instance billing data retrieval
+- Amortized cost analysis
+- Automatic pagination handling
+- Instance-level cost details
+- Multi-period data fetching
 
 ## Basic Usage
 
@@ -29,76 +29,67 @@ client = AlibabaCloudClient(
 client = AlibabaCloudClient()
 ```
 
-### Getting Billing Data
+### Getting Instance Billing Data
 
 ```python
-# Get billing data for a date range
-billing_data = client.get_billing_data(
-    start_date="2024-01-01",
-    end_date="2024-01-31",
-    granularity="DAILY"  # DAILY, MONTHLY
+# Get billing data for a billing cycle (YYYY-MM format)
+billing_items = client.fetch_instance_bill_by_billing_cycle(
+    billing_cycle="2024-01"
 )
 
-print(f"Total cost: {billing_data.total_cost}")
-print(f"Currency: {billing_data.currency}")
-print(f"Number of billing items: {len(billing_data.billing_items)}")
+print(f"Number of billing items: {len(billing_items)}")
 
 # Iterate through billing items
-for item in billing_data.billing_items:
-    print(f"Service: {item.product_name}")
-    print(f"Cost: {item.cost}")
-    print(f"Usage: {item.usage_amount} {item.usage_unit}")
+for item in billing_items:
+    print(f"Service: {item.ProductName}")
+    print(f"Instance ID: {item.InstanceID}")
+    print(f"Cost: {item.PretaxAmount} {item.Currency}")
+    print(f"Usage: {item.Usage}")
+    print(f"Billing Date: {item.BillingDate}")
 ```
 
-## Kubernetes Billing
-
-Alibaba Cloud provides detailed billing information for Kubernetes clusters:
+### Getting Amortized Costs
 
 ```python
-from cloud_billing.alibaba_cloud import K8sBillingClient
-
-# Initialize Kubernetes billing client
-k8s_client = K8sBillingClient(
-    access_key_id="your_access_key_id",
-    access_key_secret="your_access_key_secret",
-    region_id="cn-hangzhou"
+# Get amortized costs by amortization period
+amortized_items = client.fetch_instance_amortized_cost_by_amortization_period(
+    billing_cycle="2024-01"
 )
 
-# Get cluster billing data
-cluster_billing = k8s_client.get_cluster_billing(
-    cluster_id="c-123abc456def",
-    start_date="2024-01-01",
-    end_date="2024-01-31"
-)
-
-print(f"Cluster total cost: {cluster_billing.total_cost}")
-print(f"Node count: {cluster_billing.node_count}")
-
-# Analyze by namespace
-for item in cluster_billing.billing_items:
-    print(f"Namespace: {item.namespace}")
-    print(f"Pod: {item.pod_name}")
-    print(f"Cost: {item.cost}")
+for item in amortized_items:
+    print(f"Service: {item.ProductName}")
+    print(f"Amortized Amount: {item.CurrentAmortizationPretaxAmount}")
+    print(f"Amortization Period: {item.AmortizationPeriod}")
+    print(f"Status: {item.AmortizationStatus}")
 ```
 
-## Configuration Options
+## Pagination
 
-### Region Support
+The client automatically handles pagination for large datasets:
 
-Alibaba Cloud operates in multiple regions. Specify the appropriate region:
+```python
+# Fetch with custom pagination parameters
+billing_items = client.fetch_instance_bill_by_billing_cycle(
+    billing_cycle="2024-01",
+    max_page_size=100  # Results per page (default: 100)
+)
+
+# The client automatically fetches all pages and returns combined results
+```
+
+## Configuration
+
+### Region Selection
+
+Specify the region when initializing the client:
 
 ```python
 # Common regions
-regions = [
-    "cn-hangzhou",    # China (Hangzhou)
-    "cn-shanghai",    # China (Shanghai)
-    "cn-beijing",     # China (Beijing)
-    "ap-southeast-1", # Singapore
-    "us-west-1",      # US (Silicon Valley)
-    "eu-central-1"    # Germany (Frankfurt)
-]
-
-client = AlibabaCloudClient(region_id="cn-hangzhou")
+client = AlibabaCloudClient(
+    access_key_id="your_key",
+    access_key_secret="your_secret",
+    region_id="cn-hangzhou"  # Required parameter
+)
 ```
 
 ### Authentication
@@ -135,89 +126,60 @@ region_id = cn-hangzhou
 
 ## Error Handling
 
-The client provides specific exceptions for different error scenarios:
+The client raises exceptions for various error scenarios:
 
 ```python
 from cloud_billing.alibaba_cloud.exceptions import (
-    AlibabaBillingException,
-    AuthenticationException,
-    RateLimitException,
-    RegionNotSupportedException
+    APIError,
+    InvalidResponseError
 )
 
 try:
-    billing_data = client.get_billing_data("2024-01-01", "2024-01-31")
-except AuthenticationException as e:
-    print(f"Authentication failed: {e}")
-    # Check credentials
-except RateLimitException as e:
-    print(f"Rate limit exceeded: {e}")
-    # Implement retry with backoff
-except RegionNotSupportedException as e:
-    print(f"Region not supported: {e}")
-    # Use a different region
-except AlibabaBillingException as e:
-    print(f"General billing error: {e}")
+    billing_items = client.fetch_instance_bill_by_billing_cycle("2024-01")
+except APIError as e:
+    print(f"API error: {e}")
+    # Handle API failures
+except InvalidResponseError as e:
+    print(f"Invalid response format: {e}")
+    # Handle malformed responses
+except ValueError as e:
+    print(f"Invalid billing cycle format: {e}")
+    # Ensure billing_cycle is in YYYY-MM format
 ```
 
 ## Advanced Features
 
-### Filtering and Grouping
+### Filtering and Analysis
 
 ```python
-# Get billing data with filters
-billing_data = client.get_billing_data(
-    start_date="2024-01-01",
-    end_date="2024-01-31",
-    product_code="ecs",  # Filter by service
-    billing_cycle="2024-01"  # Specific billing cycle
-)
-
-# Group by product
+# Group billing items by product
 from collections import defaultdict
 
+billing_items = client.fetch_instance_bill_by_billing_cycle(billing_cycle="2024-01")
+
 product_costs = defaultdict(float)
-for item in billing_data.billing_items:
-    product_costs[item.product_name] += item.cost
+for item in billing_items:
+    product_costs[item.ProductName] += item.PretaxAmount
 
 for product, cost in sorted(product_costs.items(), key=lambda x: x[1], reverse=True):
     print(f"{product}: ¥{cost:.2f}")
-```
 
-### Pagination for Large Datasets
+# Analyze by region
+region_costs = defaultdict(float)
+for item in billing_items:
+    region_costs[item.Region] += item.PretaxAmount
 
-```python
-# Handle large datasets with pagination
-def get_all_billing_data(client, start_date, end_date):
-    all_items = []
-    page_num = 1
-    page_size = 100
-
-    while True:
-        billing_data = client.get_billing_data(
-            start_date=start_date,
-            end_date=end_date,
-            page_num=page_num,
-            page_size=page_size
-        )
-
-        all_items.extend(billing_data.billing_items)
-
-        if len(billing_data.billing_items) < page_size:
-            break
-
-        page_num += 1
-
-    return all_items
+for region, cost in sorted(region_costs.items(), key=lambda x: x[1], reverse=True):
+    print(f"{region}: ¥{cost:.2f}")
 ```
 
 ## Best Practices
 
-1. **Rate Limiting**: Implement proper rate limiting to avoid API throttling
-2. **Caching**: Cache billing data for frequently accessed date ranges
-3. **Error Handling**: Always handle specific exceptions appropriately
-4. **Credentials Security**: Never hardcode credentials in source code
-5. **Resource Cleanup**: Properly close client connections when done
+1. **Credentials Security**: Never hardcode credentials in source code
+2. **Error Handling**: Always handle APIError and InvalidResponseError
+3. **Caching**: Cache billing data for frequently accessed billing cycles
+4. **Pagination**: Let the client handle pagination automatically
+5. **Billing Cycle Format**: Always validate billing_cycle format before requests
 
 ## Troubleshooting
 
@@ -228,25 +190,27 @@ def get_all_billing_data(client, start_date, end_date):
 - Check if keys have billing API permissions
 - Ensure region is correctly specified
 
-**Rate Limiting**
-- Implement exponential backoff
-- Reduce request frequency
-- Use pagination for large datasets
+**Invalid Billing Cycle Format**
+- Use YYYY-MM format (e.g., "2024-01")
+- Do not include day component
+- Ensure hyphen is included
 
 **Empty Results**
-- Verify date range format (YYYY-MM-DD)
-- Check if billing data exists for the specified period
-- Ensure correct product codes and filters
+- Verify billing cycle exists and contains data
+- Check that credentials have permission to access billing data
+- Note that billing data may have a 1-2 day delay
 
-### Debug Mode
+### Billing Cycle Format
 
-Enable debug logging to troubleshoot issues:
+Always use YYYY-MM format for billing cycles:
 
 ```python
-import logging
+# Correct format
+billing_items = client.fetch_instance_bill_by_billing_cycle("2024-01")
 
-logging.basicConfig(level=logging.DEBUG)
-client = AlibabaCloudClient()
+# Incorrect formats will raise ValueError
+# client.fetch_instance_bill_by_billing_cycle("2024-01-01")  # ❌ Too detailed
+# client.fetch_instance_bill_by_billing_cycle("202401")      # ❌ No hyphen
 ```
 
 ## See Also

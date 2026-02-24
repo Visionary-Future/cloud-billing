@@ -2,27 +2,29 @@ from typing import Dict
 
 
 def parse_aliyun_tag(tag: str) -> Dict[str, str]:
-    """
-    解析阿里云资源标签字符串为字典格式
+    """Parse an Alibaba Cloud resource tag string into a dictionary.
 
-    支持两种格式：
+    Supports two formats:
     1. 'key:Environment value:PROD; key:Role value:App; key:Application value:xxxx'
     2. 'key:Environment value:Prod; key:Application_Owner value:xxxxx;'
 
     Args:
-        tag: 原始标签字符串
+        tag: Raw tag string.
 
     Returns:
-        解析后的标签字典，如 {'Environment': 'PROD', 'Role': 'App'}
+        Parsed tag dictionary, e.g. {'Environment': 'PROD', 'Role': 'App'}.
 
     Raises:
-        ValueError: 当标签格式不符合预期时
+        ValueError: When the tag format does not match the expected pattern.
     """
     if not tag or not tag.strip():
         return {}
 
     normalized_tag = (
-        tag.strip().replace("; ", ";").replace(";", "; ").rstrip("; ")  # 先统一去掉已有空格  # 然后统一添加标准分隔符  # 去除末尾可能多余的分隔符
+        tag.strip()
+        .replace("; ", ";")
+        .replace(";", "; ")
+        .rstrip("; ")  # normalize separators and strip trailing delimiter
     )
 
     result = {}

@@ -3,8 +3,13 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from aliyunsdkcore.auth.credentials import AccessKeyCredential
-from aliyunsdkcore.client import AcsClient, CommonRequest
+from aliyunsdkcore.auth.credentials import (
+    AccessKeyCredential,  # type: ignore[import-untyped]
+)
+from aliyunsdkcore.client import (  # type: ignore[import-untyped]
+    AcsClient,
+    CommonRequest,
+)
 from pydantic import ValidationError
 
 from .exceptions import APIError, InvalidResponseError
@@ -46,25 +51,25 @@ class AlibabaCloudClient:
             response = self.client.do_action_with_exception(request)
             if response:
                 return json.loads(response)
-            raise ValueError("响应为空或无效")
+            raise ValueError("Empty or invalid response")
         except json.JSONDecodeError as e:
-            raise ValueError(f"响应JSON解析失败: {e}") from e
+            raise ValueError(f"Failed to parse response JSON: {e}") from e
 
     def fetch_instance_bill_by_billing_cycle(
         self, billing_cycle: str, billing_date: Optional[str] = None, max_page_size: int = DEFAULT_MAX_PAGE_SIZE
     ) -> List[QueryInstanceBillItem]:
-        """获取指定账期的实例账单（自动处理分页）
+        """Fetch instance bill for the given billing cycle (pagination handled automatically).
 
         Args:
-            billing_cycle: 账期（格式：YYYY-MM）
-            billing_date: 具体账单日期（格式：YYYY-MM-DD）
-            max_page_size: 每页最大记录数（默认100）
+            billing_cycle: Billing cycle in YYYY-MM format.
+            billing_date: Specific billing date in YYYY-MM-DD format.
+            max_page_size: Maximum number of records per page (default 100).
 
         Returns:
-            合并后的账单项列表
+            Merged list of bill items.
 
         Raises:
-            ValueError: 当账期格式无效时
+            ValueError: When the billing cycle format is invalid.
         """
         self._validate_billing_cycle(billing_cycle)
         pagination = PaginationParams(max_page_size=max_page_size)
@@ -90,7 +95,7 @@ class AlibabaCloudClient:
     def _build_bill_request(
         self, billing_cycle: str, billing_date: Optional[str], pagination: PaginationParams
     ) -> CommonRequest:
-        request = CommonRequest()
+        request: CommonRequest = CommonRequest()
         request.set_accept_format("json")
         request.set_domain("business.aliyuncs.com")
         request.set_method("POST")
@@ -112,23 +117,22 @@ class AlibabaCloudClient:
 
     def _validate_billing_cycle(self, billing_cycle: str) -> None:
         if not re.match(r"^\d{4}-\d{2}$", billing_cycle):
-            raise ValueError(f"无效账期格式: {billing_cycle}，应为YYYY-MM")
+            raise ValueError(f"Invalid billing cycle format: {billing_cycle}, expected YYYY-MM")
 
     def _has_more_data(self, next_token: Optional[str]) -> bool:
         return bool(next_token and next_token.strip())
 
     def fetch_instance_amortized_cost_by_amortization_period(self, billing_cycle: str) -> List[AmortizedItem]:
-        """
-        获取按分摊周期划分的实例分摊成本
+        """Fetch instance amortized cost by amortization period.
 
         Args:
-            billing_cycle: 账期，格式为YYYY-MM
+            billing_cycle: Billing cycle in YYYY-MM format.
 
         Returns:
-            AmortizedDealedResponse: 包含分摊成本数据的响应对象
+            List of amortized cost items.
 
         Raises:
-            APIError: 当API请求失败时抛出
+            APIError: When the API request fails.
         """
         self._validate_billing_cycle(billing_cycle)
 
@@ -171,7 +175,7 @@ class AlibabaCloudClient:
         except Exception as e:
             raise APIError(f"Failed to fetch amortized cost data: {str(e)}")
 
-    def _parse_response(self, response: dict) -> AmortizedResponse:
+    def _parse_response(self, response: dict[str, Any]) -> AmortizedResponse:
         try:
             return AmortizedResponse.model_validate(response)
         except ValidationError as e:

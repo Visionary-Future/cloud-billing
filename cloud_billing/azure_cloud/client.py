@@ -12,7 +12,7 @@ from .types import BillingRecord
 
 @dataclass
 class BlobInfo:
-    """Blob信息数据结构"""
+    """Blob info data structure."""
 
     status: str
     manifest: Dict[str, Any]
@@ -20,9 +20,7 @@ class BlobInfo:
 
 @dataclass
 class RiUrlRequest:
-    """
-    RI 账单 URL 请求参数数据类
-    """
+    """Request parameters for the RI billing URL."""
 
     metric: str
     time_period: Dict[str, str]
@@ -39,11 +37,11 @@ class AzureCloudClient:
 
     def __init__(self, tenant_id: str, client_id: str, client_secret: str):
         """
-        初始化RI管理客户端
+        Initialize the Azure Cloud client.
 
-        :param tenant_id: Azure租户ID
-        :param client_id: 应用程序(客户端)ID
-        :param client_secret: 客户端密钥
+        :param tenant_id: Azure tenant ID.
+        :param client_id: Application (client) ID.
+        :param client_secret: Client secret.
         """
         self.tenant_id = tenant_id
         self.client_id = client_id
@@ -52,7 +50,7 @@ class AzureCloudClient:
         self._current_token = None
 
     def _prepare_auth_form_data(self) -> encoder.MultipartEncoder:
-        """准备认证所需的表单数据"""
+        """Prepare the multipart form data required for authentication."""
         return encoder.MultipartEncoder(
             fields={
                 "client_id": self.client_id,
@@ -63,29 +61,29 @@ class AzureCloudClient:
         )
 
     def _validate_token_response(self, response: requests.Response) -> Tuple[Optional[str], Optional[str]]:
-        """验证并解析令牌响应"""
+        """Validate and parse the token response."""
         if response.status_code != 200:
-            error_msg = f"HTTP响应失败，状态码：{response.status_code}"
+            error_msg = f"HTTP request failed with status code: {response.status_code}"
             return None, error_msg
 
         try:
             token_data = response.json()
             access_token = token_data.get("access_token")
             if not access_token:
-                return None, "响应中未找到access_token"
+                return None, "access_token not found in response"
             return access_token, None
         except json.JSONDecodeError:
-            return None, "响应不是有效的JSON格式"
+            return None, "Response is not valid JSON"
         except Exception as e:
-            return None, f"解析响应时出错: {str(e)}"
+            return None, f"Error parsing response: {str(e)}"
 
     def get_access_token(self) -> Tuple[Optional[str], Optional[str]]:
         """
-        获取Azure访问令牌
+        Retrieve an Azure access token.
 
-        :return: 元组 (access_token, error)
-                 成功时返回 (token, None)
-                 失败时返回 (None, error_message)
+        :return: Tuple (access_token, error).
+                 Returns (token, None) on success.
+                 Returns (None, error_message) on failure.
         """
         try:
             token_url = self.TOKEN_URL_TEMPLATE.format(tenant_id=self.tenant_id)
@@ -99,42 +97,42 @@ class AzureCloudClient:
                 self._current_token = token
             return token, error
         except requests.exceptions.RequestException as e:
-            return None, f"请求失败: {str(e)}"
+            return None, f"Request failed: {str(e)}"
         except Exception as e:
-            return None, f"未知错误: {str(e)}"
+            return None, f"Unknown error: {str(e)}"
 
     def refresh_token(self) -> Tuple[Optional[str], Optional[str]]:
         """
-        刷新访问令牌
+        Refresh the access token.
 
-        :return: 元组 (access_token, error)
+        :return: Tuple (access_token, error).
         """
         return self.get_access_token()
 
     def _build_billing_request_url(self, billing_account_id: str) -> str:
-        """构建账单请求URL"""
+        """Build the billing report request URL."""
         return self.BILLING_BASE_URL.format(billing_account_id) + f"?api-version={self.BILLING_API_VERSION}"
 
     def _prepare_billing_request_params(self, start_date: str, end_date: str, metric: str) -> Dict[str, Any]:
-        """准备账单请求参数"""
+        """Prepare the billing report request parameters."""
         return {"metric": metric, "timePeriod": {"start": start_date, "end": end_date}}
 
     def get_ri_location(
         self, billing_account_id: str, start_date: str, end_date: str, metric: str, token: Optional[str] = None
     ) -> Tuple[Optional[str], Optional[str]]:
         """
-        获取RI账单URL请求链接
+        Request the RI billing report and return the polling location URL.
 
-        :param billing_account_id: 账单账户ID
-        :param start_date: 开始日期 (YYYY-MM-DD)
-        :param end_date: 结束日期 (YYYY-MM-DD)
-        :param metric: 计量类型 (如 ActualCost)
-        :param token: 访问令牌(可选，如果不提供将使用缓存的令牌)
-        :return: (location_url, error) 元组
+        :param billing_account_id: Billing account ID.
+        :param start_date: Start date (YYYY-MM-DD).
+        :param end_date: End date (YYYY-MM-DD).
+        :param metric: Cost metric (e.g. ActualCost).
+        :param token: Access token (optional; cached token is used if not provided).
+        :return: Tuple (location_url, error).
         """
         use_token = token if token else self._current_token
         if not use_token:
-            return None, "未提供有效的访问令牌"
+            return None, "No valid access token provided"
 
         try:
             url = self._build_billing_request_url(billing_account_id)
@@ -148,33 +146,33 @@ class AzureCloudClient:
                 location = response.headers.get("Location")
                 if location:
                     return location, None
-                return None, "响应中未找到Location头"
+                return None, "Location header not found in response"
             else:
-                error_msg = f"请求失败，状态码: {response.status_code}"
+                error_msg = f"Request failed with status code: {response.status_code}"
                 try:
                     error_details = response.json()
-                    error_msg += f", 详情: {error_details}"
+                    error_msg += f", details: {error_details}"
                 except:
                     pass
                 return None, error_msg
 
         except requests.exceptions.RequestException as e:
             print(e)
-            return None, f"请求异常: {str(e)}"
+            return None, f"Request exception: {str(e)}"
         except Exception as e:
-            return None, f"处理请求时发生错误: {str(e)}"
+            return None, f"Error processing request: {str(e)}"
 
     def get_ri_report(self, location_url: str, token: Optional[str] = None) -> Tuple[Optional[Dict], Optional[str]]:
         """
-        获取RI账单报告数据
-        :param location_url: 从get_ri_location获取的位置URL
-        :param token: 访问令牌(可选)
-        :return: (report_data, error) 元组
+        Fetch the RI billing report data.
+
+        :param location_url: Polling location URL obtained from get_ri_location.
+        :param token: Access token (optional).
+        :return: Tuple (report_data, error).
         """
-        # 确定使用的令牌
         use_token = token if token else self._current_token
         if not use_token:
-            return None, "未提供有效的访问令牌"
+            return None, "No valid access token provided"
 
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
@@ -184,37 +182,38 @@ class AzureCloudClient:
                 try:
                     return response.json(), None
                 except json.JSONDecodeError:
-                    return None, "无法解析响应JSON"
+                    return None, "Failed to parse response JSON"
             elif response.status_code == 202:
-                return None, "报告仍在处理中，请稍后再试"
+                return None, "Report is still being generated, please retry later"
             else:
-                error_msg = f"获取报告失败，状态码: {response.status_code}"
+                error_msg = f"Failed to fetch report, status code: {response.status_code}"
                 try:
                     error_details = response.json()
-                    error_msg += f", 详情: {error_details}"
+                    error_msg += f", details: {error_details}"
                 except:
                     pass
                 return None, error_msg
 
         except requests.exceptions.RequestException as e:
-            return None, f"请求异常: {str(e)}"
+            return None, f"Request exception: {str(e)}"
         except Exception as e:
-            return None, f"处理请求时发生错误: {str(e)}"
+            return None, f"Error processing request: {str(e)}"
 
     def get_ri_csv_url(
         self, location_url: str, token: Optional[str] = None, max_retries: int = 10
     ) -> Tuple[Optional[str], Optional[str]]:
         """
-        获取RI账单CSV文件下载URL
-        :param location_url: 从get_ri_location获取的位置URL
-        :param token: 访问令牌(可选)
-        :param max_retries: 最大轮询次数(默认10次)
-        :return: (csv_url, error) 元组
+        Retrieve the CSV download URL for the RI billing report.
+
+        :param location_url: Polling location URL obtained from get_ri_location.
+        :param token: Access token (optional).
+        :param max_retries: Maximum number of polling retries (default 10).
+        :return: Tuple (csv_url, error).
         """
         use_token = token if token else self._current_token
         if not use_token:
-            return None, "未提供有效的访问令牌"
-        print(f"使用的访问令牌: {use_token}")
+            return None, "No valid access token provided"
+        print(f"Using access token: {use_token}")
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
             retry_count = 0
@@ -228,80 +227,80 @@ class AzureCloudClient:
                         if blob_info.status == "Completed" and blob_info.manifest.get("blobs"):
                             return blob_info.manifest["blobs"][0].get("blobLink"), None
                         elif blob_info.status != "Completed":
-                            return None, f"报告生成未完成，当前状态: {blob_info.status}"
+                            return None, f"Report generation not finished, current status: {blob_info.status}"
                         else:
-                            return None, "响应中未找到有效的CSV下载链接"
+                            return None, "No valid CSV download link found in response"
                     except Exception as e:
-                        return None, f"解析响应时出错: {str(e)}"
+                        return None, f"Error parsing response: {str(e)}"
 
                 time.sleep(self.POLLING_INTERVAL)
                 retry_count += 1
 
-            return None, f"超过最大重试次数({max_retries})，仍未获取到CSV下载链接"
+            return None, f"Exceeded maximum retries ({max_retries}), CSV download link not yet available"
         except requests.exceptions.RequestException as e:
-            return None, f"请求异常: {str(e)}"
+            return None, f"Request exception: {str(e)}"
         except Exception as e:
-            return None, f"处理请求时发生错误: {str(e)}"
+            return None, f"Error processing request: {str(e)}"
 
     def _parse_blob_response(self, response_text: str) -> BlobInfo:
-        """解析Blob响应"""
+        """Parse the blob status response."""
         try:
             data = json.loads(response_text)
             return BlobInfo(status=data.get("status", ""), manifest=data.get("manifest", {}))
         except json.JSONDecodeError:
-            raise ValueError("无法解析JSON响应")
+            raise ValueError("Failed to parse JSON response")
         except Exception as e:
-            raise ValueError(f"解析Blob信息时出错: {str(e)}")
+            raise ValueError(f"Error parsing blob info: {str(e)}")
 
     def download_ri_csv(self, csv_url: str, token: Optional[str] = None) -> Tuple[Optional[bytes], Optional[str]]:
         """
-        下载RI账单CSV文件
-        :param csv_url: 从get_ri_csv_url获取的CSV下载URL
-        :param token: 访问令牌(可选)
-        :return: (csv_content, error) 元组
+        Download the RI billing CSV file.
+        :param csv_url: CSV download URL obtained from get_ri_csv_url.
+        :param token: Access token (optional).
+        :return: Tuple (csv_content, error).
         """
         use_token = token if token else self._current_token
         if not use_token:
-            return None, "未提供有效的访问令牌"
+            return None, "No valid access token provided"
         try:
             response = self.session.get(csv_url)
             if response.status_code == 200:
                 return response.content, None
             else:
-                error_msg = f"下载CSV失败，状态码: {response.status_code}"
+                error_msg = f"Failed to download CSV, status code: {response.status_code}"
                 try:
                     error_details = response.json()
-                    error_msg += f", 详情: {error_details}"
+                    error_msg += f", details: {error_details}"
                 except:
                     pass
                 return None, error_msg
         except requests.exceptions.RequestException as e:
-            return None, f"请求异常: {str(e)}"
+            return None, f"Request exception: {str(e)}"
         except Exception as e:
-            return None, f"处理请求时发生错误: {str(e)}"
+            return None, f"Error processing request: {str(e)}"
 
     def get_ri_csv_as_json(self, location_url: str, token: Optional[str] = None, max_retries: int = 10):
         """
-        获取RI账单CSV内容并转换为JSON格式
-        :param location_url: 从get_ri_location获取的位置URL
-        :param token: 访问令牌(可选)
-        :param max_retries: 最大轮询次数(默认10次)
-        :yield: (row_data, error) 元组，成功时为(dict, None)，失败时为(None, error_message)
+        Fetch the RI billing CSV content and yield rows as parsed BillingRecord objects.
+        :param location_url: Polling location URL obtained from get_ri_location.
+        :param token: Access token (optional).
+        :param max_retries: Maximum number of polling retries (default 10).
+        :yield: Tuple (row_data, error); (BillingRecord, None) on success, (None, error_message) on failure.
         """
         csv_url, error = self.get_ri_csv_url(location_url, token, max_retries)
         if error:
-            yield None, f"获取CSV下载URL失败: {error}"
+            yield None, f"Failed to get CSV download URL: {error}"
             return
         if not csv_url:
-            yield None, "未能获取有效的CSV下载URL"
+            yield None, "Unable to obtain a valid CSV download URL"
             return
 
         csv_content, error = self.download_ri_csv(csv_url, token)
         if error:
-            yield None, f"下载CSV内容失败: {error}"
+            yield None, f"Failed to download CSV content: {error}"
             return
         if not csv_content:
-            yield None, "下载的CSV内容为空"
+            yield None, "Downloaded CSV content is empty"
             return
 
         try:
@@ -310,6 +309,6 @@ class AzureCloudClient:
             for row in csv_reader:
                 yield BillingRecord.model_validate(row), None
         except UnicodeDecodeError as e:
-            yield None, f"CSV解码失败: {str(e)}"
+            yield None, f"CSV decoding failed: {str(e)}"
         except Exception as e:
-            yield None, f"CSV转换为JSON时出错: {str(e)}"
+            yield None, f"Error converting CSV to records: {str(e)}"
