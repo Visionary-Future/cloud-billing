@@ -176,7 +176,7 @@ class AzureCloudClient:
 
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
-            response = self.session.get(location_url, headers=headers)
+            response = self.session.get(location_url, headers=headers, timeout=20)
 
             if response.status_code == 200:
                 try:
@@ -222,12 +222,16 @@ class AzureCloudClient:
 
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
-            response = self.session.get(location_url, headers=headers)
+            response = self.session.get(location_url, headers=headers, timeout=20)
 
             if response.status_code == 202:
                 return "pending", None, None
 
             if response.status_code == 200:
+                if not response.text.strip():
+                    # Azure occasionally returns 200 with empty body during interim states;
+                    # treat as still-pending rather than a fatal error.
+                    return "pending", None, None
                 try:
                     blob_info = self._parse_blob_response(response.text)
                     if blob_info.status == "Completed" and blob_info.manifest.get("blobs"):
@@ -267,7 +271,7 @@ class AzureCloudClient:
             retry_count = 0
 
             while retry_count < max_retries:
-                response = self.session.get(location_url, headers=headers)
+                response = self.session.get(location_url, headers=headers, timeout=20)
                 if response.status_code == 200:
                     try:
                         blob_info = self._parse_blob_response(response.text)
@@ -311,7 +315,7 @@ class AzureCloudClient:
         if not use_token:
             return None, "No valid access token provided"
         try:
-            response = self.session.get(csv_url)
+            response = self.session.get(csv_url, timeout=60)
             if response.status_code == 200:
                 return response.content, None
             else:
