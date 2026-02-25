@@ -1,7 +1,14 @@
 # SaaS / Vercel deployment dependencies
-# Core library deps are pulled in via requirements-core.txt
--r requirements-core.txt
+# Keep this file flat — Vercel's Python runtime does not support -r includes.
 
+# Core library dependencies (mirrored from requirements-core.txt)
+aliyun-python-sdk-core>=2.16.0,<3.0.0
+pydantic>=2.11.7,<3.0.0
+requests>=2.31.0
+requests-toolbelt>=1.0.0
+python-dateutil>=2.9.0
+
+# SaaS / API server
 fastapi>=0.117.0
 uvicorn>=0.34.0
 python-multipart>=0.0.20
