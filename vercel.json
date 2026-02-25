@@ -1,5 +1,6 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
+    "installCommand": "uv pip install --system -e '.[saas]'",
     "rewrites": [
         {
             "source": "/api/(.*)",
