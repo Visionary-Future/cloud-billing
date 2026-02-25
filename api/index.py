@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -87,6 +87,15 @@ class AzurePollResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    """Serve the frontend SPA. Works on both Vercel and local dev."""
+    html_path = Path(__file__).parent.parent / "public" / "index.html"
+    if html_path.exists():
+        return FileResponse(html_path)
+    return {"message": "Cloud Billing API — visit /docs for API documentation"}
 
 
 @app.get("/api/health", tags=["meta"])
