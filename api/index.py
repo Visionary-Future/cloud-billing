@@ -92,7 +92,7 @@ class AzurePollResponse(BaseModel):
 @app.get("/", include_in_schema=False)
 def index():
     """Serve the frontend SPA. Works on both Vercel and local dev."""
-    html_path = Path(__file__).parent.parent / "public" / "index.html"
+    html_path = Path(__file__).parent / "templates" / "index.html"
     if html_path.exists():
         return FileResponse(html_path)
     return {"message": "Cloud Billing API — visit /docs for API documentation"}
@@ -317,6 +317,6 @@ def azure_billing_csv(req: AzurePollRequest):
 # On Vercel, public/ is served by the CDN and this code path is never hit.
 # Locally this gives a single-port (8000) dev experience with no CORS config.
 # ---------------------------------------------------------------------------
-_PUBLIC_DIR = Path(__file__).parent.parent / "public"
+_PUBLIC_DIR = Path(__file__).parent / "templates"
 if _PUBLIC_DIR.is_dir():
     app.mount("/", StaticFiles(directory=_PUBLIC_DIR, html=True), name="static")
