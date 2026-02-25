@@ -154,10 +154,6 @@
             </svg>
             生成报告
           </button>
-          <button type="button" onclick="downloadAzureCsv()" id="btn-az-csv"
-            class="hidden border border-green-500 text-green-600 hover:bg-green-50 text-sm font-medium px-5 py-2 rounded-lg transition">
-            ↓ 下载 CSV
-          </button>
         </div>
       </form>
 
@@ -172,14 +168,12 @@
       </div>
 
       <div id="az-result" class="mt-4 hidden">
-        <div class="flex items-center justify-between mb-2">
-          <span id="az-count" class="text-sm text-gray-500"></span>
-        </div>
-        <div id="az-table-container" style="max-height:500px;overflow-y:auto;" class="bg-white rounded-xl shadow-sm overflow-x-auto">
-          <table class="min-w-full text-xs text-left">
-            <thead id="az-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
-            <tbody id="az-tbody" class="divide-y divide-gray-100"></tbody>
-          </table>
+        <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-4 flex items-center justify-between">
+          <span class="text-sm text-green-700 font-medium">✅ 报告已就绪，点击右侧按钮下载 CSV 文件</span>
+          <a id="az-csv-link" href="#" target="_blank" download="azure_billing.csv"
+            class="border border-green-500 text-green-600 hover:bg-green-100 text-sm font-medium px-5 py-2 rounded-lg transition">
+            ↓ 下载 CSV
+          </a>
         </div>
       </div>
     </div>
@@ -236,6 +230,14 @@
       el.classList.remove('hidden');
     }
 
+    // Safe JSON parse — avoids "Unexpected end of JSON input" on empty responses
+    async function safeJson(res) {
+      const text = await res.text();
+      if (!text) throw new Error(`服务器返回空响应 (HTTP ${res.status})`);
+      try { return JSON.parse(text); }
+      catch { throw new Error(`服务器返回非 JSON 响应 (HTTP ${res.status}): ${text.slice(0, 120)}`); }
+    }
+
     // Tab switching
     function switchTab(tab) {
       ['alibaba', 'azure'].forEach(t => {
@@ -285,7 +287,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
 
         aliLastItems = data.items;
@@ -314,7 +316,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+        if (!res.ok) { const d = await safeJson(res); throw new Error(d.detail); }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -333,7 +335,9 @@
     let azLocationUrl = null;
     let azPollTimer = null;
     let azPollCount = 0;
-    const AZ_MAX_POLLS = 60;  // 60 × 10s = 10 min max
+    let azConsecErrors = 0;        // consecutive transient errors
+    const AZ_MAX_POLLS = 60;        // 60 × 10s = 10 min max
+    const AZ_MAX_CONSEC_ERRORS = 5;  // stop only after 5 back-to-back failures
 
     function getAzCreds() {
       return {
@@ -367,10 +371,10 @@
       if (azPollTimer) { clearInterval(azPollTimer); azPollTimer = null; }
       azLocationUrl = null;
       azPollCount = 0;
+      azConsecErrors = 0;
 
       setLoading('az-spinner', 'btn-az-start', true);
       document.getElementById('az-result').classList.add('hidden');
-      document.getElementById('btn-az-csv').classList.add('hidden');
       setAzStatus('正在提交报告生成请求…', true);
 
       try {
@@ -379,7 +383,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
 
         azLocationUrl = data.location_url;
@@ -408,7 +412,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...creds, location_url: azLocationUrl }),
         });
-        const data = await res.json();
+        const data = await safeJson(res);
+        azConsecErrors = 0; // successful parse — reset error streak
         if (!res.ok) {
           clearInterval(azPollTimer);
           setAzStatus(`轮询出错：${data.detail || res.status}`, false);
@@ -417,41 +422,21 @@
 
         if (data.status === 'completed') {
           clearInterval(azPollTimer);
-          setAzStatus(`✅ 报告已就绪，共 ${data.records?.length ?? 0} 条记录。`, false);
-          renderTable('az-thead', 'az-tbody', data.records || []);
-          document.getElementById('az-count').textContent = `共 ${data.records?.length ?? 0} 条记录（最多展示 2000 条）`;
+          setAzStatus(`✅ 报告已就绪，请点击下载按钮获取 CSV 文件。`, false);
+          document.getElementById('az-csv-link').href = data.csv_url;
           document.getElementById('az-result').classList.remove('hidden');
-          document.getElementById('btn-az-csv').classList.remove('hidden');
         }
         // else status === 'pending': keep polling
       } catch (e) {
-        clearInterval(azPollTimer);
-        setAzStatus(`网络错误：${e.message}`, false);
+        azConsecErrors++;
+        if (azConsecErrors >= AZ_MAX_CONSEC_ERRORS) {
+          clearInterval(azPollTimer);
+          setAzStatus(`网络错误（已连续失败 ${azConsecErrors} 次）：${e.message}`, false);
+        }
+        // transient error — stay in poll loop and try again next tick
       }
     }
 
-    async function downloadAzureCsv() {
-      const creds = getAzCreds();
-      if (!azLocationUrl) {
-        showError('az-status', '请先生成报告');
-        return;
-      }
-      try {
-        const res = await fetch(`${BASE}/api/azure/billing/csv`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...creds, location_url: azLocationUrl }),
-        });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'azure_billing.csv'; a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        setAzStatus(`下载失败：${e.message}`, false);
-      }
-    }
   </script>
 </body>
 </html>

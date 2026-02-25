@@ -235,8 +235,8 @@ def azure_billing_poll(req: AzurePollRequest):
     Step 2: poll Azure report status (single non-blocking check).
 
     Returns status "pending" while the report is still generating,
-    or status "completed" with records when ready.
-    The client (browser) should call this endpoint every ~10 seconds.
+    or status "completed" with a direct csv_url when ready.
+    The client downloads the CSV directly from Azure Blob Storage.
     """
     client = AzureCloudClient(
         tenant_id=req.tenant_id,
@@ -260,56 +260,7 @@ def azure_billing_poll(req: AzurePollRequest):
     if not csv_url:
         raise HTTPException(status_code=502, detail="Report completed but no CSV URL returned.")
 
-    csv_bytes, err = client.download_ri_csv(csv_url, token=token)
-    if err:
-        raise HTTPException(status_code=502, detail=f"Failed to download CSV: {err}")
-
-    records = []
-    if csv_bytes:
-        import csv as csv_mod
-
-        csv_str = csv_bytes.decode("utf-8-sig")
-        reader = csv_mod.DictReader(csv_str.splitlines())
-        for row in reader:
-            records.append(dict(row))
-
-    return AzurePollResponse(status="completed", csv_url=csv_url, records=records)
-
-
-@app.post("/api/azure/billing/csv", tags=["azure"], summary="Download Azure billing CSV directly")
-def azure_billing_csv(req: AzurePollRequest):
-    """
-    Download Azure billing CSV as a file attachment.
-    Requires the location_url from the start endpoint (i.e., report must already be completed).
-    """
-    client = AzureCloudClient(
-        tenant_id=req.tenant_id,
-        client_id=req.client_id,
-        client_secret=req.client_secret,
-    )
-
-    token, err = client.get_access_token()
-    if err:
-        raise HTTPException(status_code=401, detail=f"Azure authentication failed: {err}")
-
-    status, csv_url, err = client.check_ri_report_once(location_url=req.location_url, token=token)
-
-    if status == "error":
-        raise HTTPException(status_code=502, detail=err)
-    if status == "pending":
-        raise HTTPException(status_code=202, detail="Report is still being generated, please poll first.")
-    if not csv_url:
-        raise HTTPException(status_code=502, detail="No CSV URL available.")
-
-    csv_bytes, err = client.download_ri_csv(csv_url, token=token)
-    if err:
-        raise HTTPException(status_code=502, detail=f"Failed to download CSV: {err}")
-
-    return StreamingResponse(
-        iter([csv_bytes]),
-        media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="azure_billing.csv"'},
-    )
+    return AzurePollResponse(status="completed", csv_url=csv_url)
 
 
 # ---------------------------------------------------------------------------
