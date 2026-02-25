@@ -1,0 +1,5 @@
+aliyun-python-sdk-core>=2.16.0,<3.0.0
+pydantic>=2.11.7,<3.0.0
+requests>=2.31.0
+requests-toolbelt>=1.0.0
+python-dateutil>=2.9.0

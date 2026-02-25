@@ -1,3 +1,7 @@
-aliyun-python-sdk-core>=2.16.0,<3.0.0
-pydantic>=2.11.7,<3.0.0
-requests>=2.31.0
+# SaaS / Vercel deployment dependencies
+# Core library deps are pulled in via requirements-core.txt
+-r requirements-core.txt
+
+fastapi>=0.117.0
+uvicorn>=0.34.0
+python-multipart>=0.0.20
