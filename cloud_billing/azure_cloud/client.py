@@ -199,6 +199,54 @@ class AzureCloudClient:
         except Exception as e:
             return None, f"Error processing request: {str(e)}"
 
+    def check_ri_report_once(
+        self, location_url: str, token: Optional[str] = None
+    ) -> Tuple[str, Optional[str], Optional[str]]:
+        """
+        Single non-blocking poll of the RI billing report status.
+
+        Unlike get_ri_csv_url which blocks for up to 300 seconds internally,
+        this method makes exactly one HTTP request and returns immediately.
+        Intended to be called repeatedly by the client (e.g., a browser polling
+        every 10 seconds) rather than looping server-side.
+
+        :param location_url: Polling location URL obtained from get_ri_location.
+        :param token: Access token (optional; cached token is used if not provided).
+        :return: Tuple (status, csv_url_or_None, error_or_None).
+                 status is one of: "pending", "completed", "error".
+                 csv_url is set only when status == "completed".
+        """
+        use_token = token if token else self._current_token
+        if not use_token:
+            return "error", None, "No valid access token provided"
+
+        try:
+            headers = {"Authorization": f"Bearer {use_token}"}
+            response = self.session.get(location_url, headers=headers)
+
+            if response.status_code == 202:
+                return "pending", None, None
+
+            if response.status_code == 200:
+                try:
+                    blob_info = self._parse_blob_response(response.text)
+                    if blob_info.status == "Completed" and blob_info.manifest.get("blobs"):
+                        csv_url = blob_info.manifest["blobs"][0].get("blobLink")
+                        return "completed", csv_url, None
+                    elif blob_info.status == "Completed":
+                        return "error", None, "Report completed but no CSV link found"
+                    else:
+                        return "pending", None, None
+                except Exception as e:
+                    return "error", None, f"Error parsing response: {str(e)}"
+
+            return "error", None, f"Unexpected status code: {response.status_code}"
+
+        except requests.exceptions.RequestException as e:
+            return "error", None, f"Request exception: {str(e)}"
+        except Exception as e:
+            return "error", None, f"Unknown error: {str(e)}"
+
     def get_ri_csv_url(
         self, location_url: str, token: Optional[str] = None, max_retries: int = 10
     ) -> Tuple[Optional[str], Optional[str]]:

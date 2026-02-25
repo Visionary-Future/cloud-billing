@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Billing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-active { @apply border-b-2 border-blue-500 text-blue-600 font-semibold; }
+    .tab-inactive { @apply text-gray-500 hover:text-gray-700; }
+    #table-container { max-height: 500px; overflow-y: auto; }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900">☁️ Cloud Billing</h1>
+        <p class="text-xs text-gray-400 mt-0.5">多云账单查询工具 · 凭证仅保存在您的浏览器本地，不上传服务器</p>
+      </div>
+      <a href="/docs" target="_blank" class="text-xs text-blue-500 hover:underline">API 文档</a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- Tabs -->
+    <div class="flex border-b border-gray-200 mb-6 gap-6">
+      <button id="tab-alibaba" onclick="switchTab('alibaba')" class="pb-3 px-1 text-sm tab-active">阿里云账单</button>
+      <button id="tab-azure" onclick="switchTab('azure')" class="pb-3 px-1 text-sm tab-inactive">Azure 账单</button>
+    </div>
+
+    <!-- ==================== ALIBABA PANEL ==================== -->
+    <div id="panel-alibaba">
+      <form id="form-alibaba" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">阿里云凭证</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Access Key ID</label>
+            <input id="ali-ak-id" type="text" placeholder="LTAI5t..." autocomplete="off"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Access Key Secret</label>
+            <input id="ali-ak-secret" type="password" placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Region ID</label>
+            <input id="ali-region" type="text" value="cn-hangzhou"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+        </div>
+
+        <div class="border-t pt-4">
+          <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">查询参数</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">账期（YYYY-MM）</label>
+              <input id="ali-cycle" type="text" placeholder="2025-12"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">指定日期（可选，YYYY-MM-DD，按天粒度）</label>
+              <input id="ali-date" type="text" placeholder="留空则按月"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="fetchAlibaba()" id="btn-ali-query"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition">
+            <svg id="ali-spinner" class="hidden w-4 h-4 spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            查询
+          </button>
+          <button type="button" onclick="downloadAliCsv()" id="btn-ali-csv"
+            class="hidden border border-green-500 text-green-600 hover:bg-green-50 text-sm font-medium px-5 py-2 rounded-lg transition">
+            ↓ 下载 CSV
+          </button>
+        </div>
+      </form>
+
+      <div id="ali-status" class="mt-4 text-sm text-gray-500 hidden"></div>
+      <div id="ali-result" class="mt-4 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span id="ali-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="table-container" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead id="ali-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
+            <tbody id="ali-tbody" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== AZURE PANEL ==================== -->
+    <div id="panel-azure" class="hidden">
+      <form id="form-azure" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">Azure 凭证（中国区）</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Tenant ID</label>
+            <input id="az-tenant" type="text" placeholder="xxxxxxxx-xxxx-..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Client ID</label>
+            <input id="az-client-id" type="text" placeholder="xxxxxxxx-xxxx-..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Client Secret</label>
+            <input id="az-secret" type="password" placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+        </div>
+
+        <div class="border-t pt-4">
+          <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">查询参数</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Billing Account ID</label>
+              <input id="az-account" type="text" placeholder="xxxxxxxx:xxxxxxxx_xxxx-xx-xx_xxxxxxxx"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">开始日期（YYYY-MM-DD）</label>
+              <input id="az-start" type="text" placeholder="2025-12-01"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">结束日期（YYYY-MM-DD）</label>
+              <input id="az-end" type="text" placeholder="2025-12-31"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="startAzure()" id="btn-az-start"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition">
+            <svg id="az-spinner" class="hidden w-4 h-4 spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            生成报告
+          </button>
+          <button type="button" onclick="downloadAzureCsv()" id="btn-az-csv"
+            class="hidden border border-green-500 text-green-600 hover:bg-green-50 text-sm font-medium px-5 py-2 rounded-lg transition">
+            ↓ 下载 CSV
+          </button>
+        </div>
+      </form>
+
+      <div id="az-status" class="mt-4 hidden">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-700 flex items-center gap-2">
+          <svg id="az-poll-spinner" class="hidden w-4 h-4 spinner flex-shrink-0" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+          <span id="az-status-text"></span>
+        </div>
+      </div>
+
+      <div id="az-result" class="mt-4 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span id="az-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="az-table-container" style="max-height:500px;overflow-y:auto;" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead id="az-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
+            <tbody id="az-tbody" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+    const BASE = '';  // same origin; empty string works for both local and prod
+
+    function lastMonth() {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      return { cycle: `${y}-${m}`, start: `${y}-${m}-01`, end: `${y}-${m}-${new Date(y, d.getMonth()+1, 0).getDate()}` };
+    }
+
+    function ls(key, val) {
+      if (val === undefined) return localStorage.getItem(key) || '';
+      if (val) localStorage.setItem(key, val); else localStorage.removeItem(key);
+    }
+
+    function persist(ids) {
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        const val = ls(id);
+        if (val) el.value = val;
+        el.addEventListener('input', () => ls(id, el.value));
+      });
+    }
+
+    function setLoading(spinnerId, btnId, loading) {
+      document.getElementById(spinnerId).classList.toggle('hidden', !loading);
+      document.getElementById(btnId).disabled = loading;
+    }
+
+    function renderTable(theadId, tbodyId, rows) {
+      if (!rows || rows.length === 0) return;
+      const keys = Object.keys(rows[0]);
+      const thead = document.getElementById(theadId);
+      const tbody = document.getElementById(tbodyId);
+      thead.innerHTML = '<tr>' + keys.map(k => `<th class="px-3 py-2 whitespace-nowrap">${k}</th>`).join('') + '</tr>';
+      tbody.innerHTML = rows.slice(0, 2000).map(row =>
+        '<tr class="hover:bg-gray-50">' + keys.map(k => `<td class="px-3 py-2 whitespace-nowrap text-gray-700">${row[k] ?? ''}</td>`).join('') + '</tr>'
+      ).join('');
+    }
+
+    function showError(statusId, msg) {
+      const el = document.getElementById(statusId);
+      el.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">${msg}</div>`;
+      el.classList.remove('hidden');
+    }
+
+    // Tab switching
+    function switchTab(tab) {
+      ['alibaba', 'azure'].forEach(t => {
+        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`tab-${t}`).className = `pb-3 px-1 text-sm ${t === tab ? 'tab-active' : 'tab-inactive'}`;
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // Init: restore saved credentials + default dates
+    // -----------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      persist(['ali-ak-id', 'ali-ak-secret', 'ali-region', 'ali-cycle',
+               'az-tenant', 'az-client-id', 'az-secret', 'az-account', 'az-start', 'az-end']);
+      const lm = lastMonth();
+      if (!document.getElementById('ali-cycle').value) document.getElementById('ali-cycle').value = lm.cycle;
+      if (!document.getElementById('az-start').value) document.getElementById('az-start').value = lm.start;
+      if (!document.getElementById('az-end').value) document.getElementById('az-end').value = lm.end;
+    });
+
+    // -----------------------------------------------------------------------
+    // Alibaba
+    // -----------------------------------------------------------------------
+    let aliLastItems = null;
+
+    async function fetchAlibaba() {
+      const body = {
+        access_key_id: document.getElementById('ali-ak-id').value.trim(),
+        access_key_secret: document.getElementById('ali-ak-secret').value.trim(),
+        region_id: document.getElementById('ali-region').value.trim() || 'cn-hangzhou',
+        billing_cycle: document.getElementById('ali-cycle').value.trim(),
+        billing_date: document.getElementById('ali-date').value.trim() || null,
+      };
+      if (!body.access_key_id || !body.access_key_secret || !body.billing_cycle) {
+        showError('ali-status', '请填写 Access Key ID、Access Key Secret 和账期');
+        return;
+      }
+
+      setLoading('ali-spinner', 'btn-ali-query', true);
+      document.getElementById('ali-status').classList.add('hidden');
+      document.getElementById('ali-result').classList.add('hidden');
+      document.getElementById('btn-ali-csv').classList.add('hidden');
+
+      try {
+        const res = await fetch(`${BASE}/api/alibaba/billing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+        aliLastItems = data.items;
+        document.getElementById('ali-count').textContent = `共 ${data.total} 条记录`;
+        renderTable('ali-thead', 'ali-tbody', data.items);
+        document.getElementById('ali-result').classList.remove('hidden');
+        document.getElementById('btn-ali-csv').classList.remove('hidden');
+      } catch (e) {
+        showError('ali-status', `查询失败：${e.message}`);
+      } finally {
+        setLoading('ali-spinner', 'btn-ali-query', false);
+      }
+    }
+
+    async function downloadAliCsv() {
+      const body = {
+        access_key_id: document.getElementById('ali-ak-id').value.trim(),
+        access_key_secret: document.getElementById('ali-ak-secret').value.trim(),
+        region_id: document.getElementById('ali-region').value.trim() || 'cn-hangzhou',
+        billing_cycle: document.getElementById('ali-cycle').value.trim(),
+        billing_date: document.getElementById('ali-date').value.trim() || null,
+      };
+      try {
+        const res = await fetch(`${BASE}/api/alibaba/billing/csv`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `alibaba_billing_${body.billing_cycle}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        showError('ali-status', `下载失败：${e.message}`);
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Azure — two-step polling
+    // -----------------------------------------------------------------------
+    let azLocationUrl = null;
+    let azPollTimer = null;
+    let azPollCount = 0;
+    const AZ_MAX_POLLS = 60;  // 60 × 10s = 10 min max
+
+    function getAzCreds() {
+      return {
+        tenant_id: document.getElementById('az-tenant').value.trim(),
+        client_id: document.getElementById('az-client-id').value.trim(),
+        client_secret: document.getElementById('az-secret').value.trim(),
+      };
+    }
+
+    function setAzStatus(text, spinning) {
+      const el = document.getElementById('az-status');
+      document.getElementById('az-status-text').textContent = text;
+      document.getElementById('az-poll-spinner').classList.toggle('hidden', !spinning);
+      el.classList.remove('hidden');
+    }
+
+    async function startAzure() {
+      const creds = getAzCreds();
+      const body = {
+        ...creds,
+        billing_account_id: document.getElementById('az-account').value.trim(),
+        start_date: document.getElementById('az-start').value.trim(),
+        end_date: document.getElementById('az-end').value.trim(),
+        metric: 'ActualCost',
+      };
+      if (!body.tenant_id || !body.client_id || !body.client_secret || !body.billing_account_id) {
+        showError('az-status', '请填写所有 Azure 凭证和 Billing Account ID');
+        return;
+      }
+
+      if (azPollTimer) { clearInterval(azPollTimer); azPollTimer = null; }
+      azLocationUrl = null;
+      azPollCount = 0;
+
+      setLoading('az-spinner', 'btn-az-start', true);
+      document.getElementById('az-result').classList.add('hidden');
+      document.getElementById('btn-az-csv').classList.add('hidden');
+      setAzStatus('正在提交报告生成请求…', true);
+
+      try {
+        const res = await fetch(`${BASE}/api/azure/billing/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+        azLocationUrl = data.location_url;
+        setAzStatus('报告生成中，Azure 通常需要 1-5 分钟，请稍候…', true);
+        azPollTimer = setInterval(() => pollAzure(creds), 10000);
+      } catch (e) {
+        showError('az-status', `提交失败：${e.message}`);
+      } finally {
+        setLoading('az-spinner', 'btn-az-start', false);
+      }
+    }
+
+    async function pollAzure(creds) {
+      azPollCount++;
+      if (azPollCount > AZ_MAX_POLLS) {
+        clearInterval(azPollTimer);
+        setAzStatus('超过最大等待时间（10 分钟），请重新提交。', false);
+        return;
+      }
+
+      setAzStatus(`报告生成中，已等待约 ${azPollCount * 10} 秒，请稍候…（每 10 秒检查一次）`, true);
+
+      try {
+        const res = await fetch(`${BASE}/api/azure/billing/poll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...creds, location_url: azLocationUrl }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          clearInterval(azPollTimer);
+          setAzStatus(`轮询出错：${data.detail || res.status}`, false);
+          return;
+        }
+
+        if (data.status === 'completed') {
+          clearInterval(azPollTimer);
+          setAzStatus(`✅ 报告已就绪，共 ${data.records?.length ?? 0} 条记录。`, false);
+          renderTable('az-thead', 'az-tbody', data.records || []);
+          document.getElementById('az-count').textContent = `共 ${data.records?.length ?? 0} 条记录（最多展示 2000 条）`;
+          document.getElementById('az-result').classList.remove('hidden');
+          document.getElementById('btn-az-csv').classList.remove('hidden');
+        }
+        // else status === 'pending': keep polling
+      } catch (e) {
+        clearInterval(azPollTimer);
+        setAzStatus(`网络错误：${e.message}`, false);
+      }
+    }
+
+    async function downloadAzureCsv() {
+      const creds = getAzCreds();
+      if (!azLocationUrl) {
+        showError('az-status', '请先生成报告');
+        return;
+      }
+      try {
+        const res = await fetch(`${BASE}/api/azure/billing/csv`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...creds, location_url: azLocationUrl }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'azure_billing.csv'; a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        setAzStatus(`下载失败：${e.message}`, false);
+      }
+    }
+  </script>
+</body>
+</html>
