@@ -26,21 +26,29 @@ for record in billing_data:
     print(f"Cost: {record.PreTaxAmount}")
 ```
 
-### AWS (Stub)
+### AWS
 
 ```python
 from cloud_billing.aws_cloud import AWSCloudClient
 
 # Initialize the client
-client = AWSCloudClient()
+client = AWSCloudClient(
+    access_key_id="your_access_key_id",
+    secret_access_key="your_secret_access_key",
+)
 
-# Available methods (limited - stub implementation)
-region = client.get_region()
-client.set_region("us-east-1")
-error = client.connect()
+# Get cost and usage data
+cost_data = client.get_cost_and_usage(
+    time_period={"Start": "2024-01-01", "End": "2024-02-01"},
+    granularity="MONTHLY",
+    group_by=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+)
 
-# Note: Full Cost Explorer integration is not yet implemented
-print("AWS billing support is under development")
+for period in cost_data:
+    for group in (period.Groups or []):
+        service = group.Keys[0]
+        cost = group.Metrics["UnblendedCost"].Amount
+        print(f"{service}: ${cost}")
 ```
 
 ### Azure
@@ -73,24 +81,24 @@ for billing_record, error in client.get_ri_csv_as_json(location_url):
         print(f"Cost: {billing_record.PreTaxAmount}")
 ```
 
-### Huawei Cloud (Stub)
+### Huawei Cloud
 
 ```python
 from cloud_billing.huawei_cloud import HuaweiCloudClient
 
 # Initialize the client
 client = HuaweiCloudClient(
-    access_key_id="your_access_key_id",
-    secret_access_key="your_secret_access_key",
-    region="cn-north-1"
+    access_key="your_access_key",
+    secret_key="your_secret_key",
+    domain_id="your_domain_id",
 )
 
-# Available methods (limited - stub implementation)
-error = client.connect()
-project_id = client.get_project_id()
+# Get monthly bill summary
+bill_items, error = client.query_monthly_bill_summary(bill_cycle="2024-01")
 
-# Note: Full billing data support is under development
-print("Huawei Cloud billing support is under development")
+if not error:
+    for item in bill_items:
+        print(f"{item.service_type_name}: ¥{item.consume_amount}")
 ```
 
 ## Environment Variables
