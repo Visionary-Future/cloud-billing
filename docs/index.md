@@ -3,14 +3,14 @@
 ![Python Version](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue)
 ![Tests](https://github.com/Visionary-Future/cloud-billing/actions/workflows/pytest.yml/badge.svg)
 
-A comprehensive Python package for fetching billing information from multiple cloud providers.
+A comprehensive Python package for fetching billing information from Alibaba Cloud, AWS, Azure, and Huawei Cloud.
 
 ## Supported Cloud Providers
 
 - **Alibaba Cloud** - Complete billing data retrieval with Kubernetes billing support
 - **AWS** - Cost and usage data from AWS Cost Explorer
 - **Azure** - Billing information from Azure Cost Management
-- **Huawei Cloud** - Usage and billing data retrieval
+- **Huawei Cloud** - Monthly bill summary from Huawei BSS API
 
 ## Key Features
 

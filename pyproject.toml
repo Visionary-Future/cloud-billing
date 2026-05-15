@@ -1,7 +1,7 @@
 [project]
 name = "cloud-billing"
 version = "0.1.0"
-description = "A package to fetch billing information from Alibaba Cloud, Azure Cloud, and AWS"
+description = "A package to fetch billing information from Alibaba Cloud, AWS, Azure, and Huawei Cloud"
 authors = [
     {name = "Kai Yang", email = "kaiyang939325@gmail.com"}
 ]
@@ -10,6 +10,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "aliyun-python-sdk-core>=2.16.0,<3.0.0",
+    "boto3>=1.35.0,<2.0.0",
+    "huaweicloudsdkbss>=3.1.0,<4.0.0",
+    "huaweicloudsdkcore>=3.1.0,<4.0.0",
     "pydantic>=2.11.7,<3.0.0",
     "requests>=2.31.0",
     "requests-toolbelt>=1.0.0,<2.0.0",

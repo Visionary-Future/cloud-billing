@@ -53,6 +53,8 @@ print(cloud_billing.__version__)
 The package automatically installs the following dependencies:
 
 - `aliyun-python-sdk-core` - For Alibaba Cloud API integration
+- `boto3` - For AWS Cost Explorer API integration
+- `huaweicloudsdkbss` / `huaweicloudsdkcore` - For Huawei Cloud BSS API integration
 - `pydantic` - For data validation and type safety
 - `requests` - For HTTP requests
 - `requests-toolbelt` - Additional utilities for requests
