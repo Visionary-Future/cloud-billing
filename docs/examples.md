@@ -142,6 +142,108 @@ if report:
         print(f"  {service}: ${cost:.2f}")
 ```
 
+## AWS Cost Explorer Analysis
+
+Get and analyze AWS cost data grouped by service:
+
+```python
+from cloud_billing.aws_cloud import AWSCloudClient
+
+def analyze_aws_costs(start_date: str, end_date: str):
+    """
+    Analyze AWS costs for a given date range.
+
+    Args:
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format
+    """
+    client = AWSCloudClient(
+        access_key_id="your_access_key",
+        secret_access_key="your_secret_key",
+    )
+
+    cost_data = client.get_cost_and_usage(
+        time_period={"Start": start_date, "End": end_date},
+        granularity="MONTHLY",
+        metrics=["UnblendedCost", "UsageQuantity"],
+        group_by=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+    )
+
+    service_costs = {}
+    for period in cost_data:
+        for group in (period.Groups or []):
+            service = group.Keys[0]
+            cost = float(group.Metrics["UnblendedCost"].Amount)
+
+            if service in service_costs:
+                service_costs[service] += cost
+            else:
+                service_costs[service] = cost
+
+    return sorted(service_costs.items(), key=lambda x: x[1], reverse=True)
+
+# Usage
+services = analyze_aws_costs("2024-01-01", "2024-02-01")
+print("AWS costs by service:")
+for service, cost in services:
+    print(f"  {service}: ${cost:.2f}")
+```
+
+## Huawei Cloud Monthly Bill Summary
+
+Query Huawei Cloud monthly bill and analyze costs:
+
+```python
+from cloud_billing.huawei_cloud import HuaweiCloudClient
+
+def analyze_huawei_billing(bill_cycle: str):
+    """
+    Analyze Huawei Cloud billing for a specific month.
+
+    Args:
+        bill_cycle: Billing cycle in YYYY-MM format
+    """
+    client = HuaweiCloudClient(
+        access_key="your_access_key",
+        secret_key="your_secret_key",
+        domain_id="your_domain_id",
+    )
+
+    bill_items, error = client.query_monthly_bill_summary(bill_cycle=bill_cycle)
+
+    if error:
+        print(f"Error fetching bill: {error}")
+        return None
+
+    # Analyze costs by service type
+    service_costs = {}
+    for item in bill_items:
+        service = item.service_type_name or item.service_type_code or "Unknown"
+        cost = item.consume_amount + item.cash_amount
+
+        if service in service_costs:
+            service_costs[service] += cost
+        else:
+            service_costs[service] = cost
+
+    total = sum(service_costs.values())
+    return {
+        "total_cost": total,
+        "item_count": len(bill_items),
+        "service_breakdown": sorted(
+            service_costs.items(), key=lambda x: x[1], reverse=True
+        ),
+    }
+
+# Usage
+report = analyze_huawei_billing("2024-01")
+if report:
+    print(f"Total cost: ¥{report['total_cost']:.2f}")
+    print(f"Items: {report['item_count']}")
+    for service, cost in report["service_breakdown"]:
+        print(f"  {service}: ¥{cost:.2f}")
+```
+
 ## Monthly Cost Trend Analysis
 
 Track costs over multiple months with Alibaba Cloud:
