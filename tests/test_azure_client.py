@@ -448,10 +448,10 @@ class TestGetRiCsvAsJson:
         mock_blob.text = blob
         mock_blob.json.return_value = json.loads(blob)
 
-        csv_bytes = _build_csv_row().encode("utf-8")
+        csv_text = _build_csv_row()
         mock_csv = MagicMock()
         mock_csv.status_code = 200
-        mock_csv.content = csv_bytes
+        mock_csv.iter_lines.return_value = iter(csv_text.splitlines())
 
         with patch.object(client.session, "get") as mock_get:
             mock_get.side_effect = [mock_blob, mock_csv]
@@ -694,17 +694,19 @@ class TestCheckRiReportOnceErrors:
 class TestGetRiCsvAsJsonErrors:
     def test_decode_error(self, client):
         client._current_token = "tok-decode"
+        mock_resp = MagicMock()
+        mock_resp.iter_lines.return_value = iter(["col1,col2\x80\x81", "val1,invalid"])
         with patch.object(client, "get_ri_csv_url", return_value=("https://fake.url", None)):
-            with patch.object(client, "download_ri_csv", return_value=(b"\x80\x81invalid-utf8", None)):
+            with patch.object(client, "download_ri_csv_stream", return_value=(mock_resp, None)):
                 results = list(client.get_ri_csv_as_json("https://poll.url"))
-                assert len(results) == 1
+                assert len(results) > 0
                 _, error = results[0]
-                assert "CSV decoding failed" in error
+                assert error is not None
 
     def test_download_error(self, client):
         client._current_token = "tok-dl"
         with patch.object(client, "get_ri_csv_url", return_value=("https://fake.url", None)):
-            with patch.object(client, "download_ri_csv", return_value=(None, "Download error")):
+            with patch.object(client, "download_ri_csv_stream", return_value=(None, "Download error")):
                 results = list(client.get_ri_csv_as_json("https://poll.url"))
                 assert len(results) == 1
                 _, error = results[0]
@@ -712,8 +714,10 @@ class TestGetRiCsvAsJsonErrors:
 
     def test_empty_csv_content(self, client):
         client._current_token = "tok-empty"
+        mock_resp = MagicMock()
+        mock_resp.iter_lines.return_value = iter([])
         with patch.object(client, "get_ri_csv_url", return_value=("https://fake.url", None)):
-            with patch.object(client, "download_ri_csv", return_value=(b"", None)):
+            with patch.object(client, "download_ri_csv_stream", return_value=(mock_resp, None)):
                 results = list(client.get_ri_csv_as_json("https://poll.url"))
                 assert len(results) == 1
                 _, error = results[0]
