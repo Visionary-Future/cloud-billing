@@ -41,9 +41,47 @@ def _setup_cloud_sdk_mocks() -> None:
     sys.modules["aliyunsdkcore.auth.credentials"].AccessKeyCredential = MagicMock
     sys.modules["aliyunsdkcore.auth.credentials"].StsTokenCredential = MagicMock
 
+    class _StubCommonRequest:
+        """Stub for aliyunsdkcore.client.CommonRequest with real getter behavior."""
+
+        def __init__(self) -> None:
+            self._action_name: str = ""
+            self._domain: str = ""
+            self._query_params: dict[str, str] = {}
+
+        def set_accept_format(self, fmt: str) -> None:
+            pass
+
+        def set_domain(self, domain: str) -> None:
+            self._domain = domain
+
+        def set_method(self, method: str) -> None:
+            pass
+
+        def set_protocol_type(self, proto: str) -> None:
+            pass
+
+        def set_version(self, version: str) -> None:
+            pass
+
+        def set_action_name(self, name: str) -> None:
+            self._action_name = name
+
+        def add_query_param(self, key: str, value: str) -> None:
+            self._query_params[key] = value
+
+        def get_action_name(self) -> str:
+            return self._action_name
+
+        def get_domain(self) -> str:
+            return self._domain
+
+        def get_query_params(self) -> dict[str, str]:
+            return dict(self._query_params)
+
     client_mod = _ensure_module("aliyunsdkcore.client")
     client_mod.AcsClient = MagicMock
-    client_mod.CommonRequest = MagicMock
+    client_mod.CommonRequest = _StubCommonRequest
     client_mod.RpcClient = MagicMock
 
     _ensure_module("aliyunsdkbssopenapi.request.v20171214")
