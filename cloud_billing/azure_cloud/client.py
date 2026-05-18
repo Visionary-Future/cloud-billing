@@ -1,13 +1,17 @@
 import csv
 import json
+import logging
 import time
 from dataclasses import dataclass
+from collections.abc import Generator
 from typing import Any, Dict, Optional, Tuple
 
 import requests
 from requests_toolbelt.multipart import encoder
 
 from .types import BillingRecord
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -152,12 +156,12 @@ class AzureCloudClient:
                 try:
                     error_details = response.json()
                     error_msg += f", details: {error_details}"
-                except:
+                except json.JSONDecodeError:
                     pass
                 return None, error_msg
 
         except requests.exceptions.RequestException as e:
-            print(e)
+            logger.error("Request failed: %s", e)
             return None, f"Request exception: {str(e)}"
         except Exception as e:
             return None, f"Error processing request: {str(e)}"
@@ -190,7 +194,7 @@ class AzureCloudClient:
                 try:
                     error_details = response.json()
                     error_msg += f", details: {error_details}"
-                except:
+                except json.JSONDecodeError:
                     pass
                 return None, error_msg
 
@@ -265,7 +269,6 @@ class AzureCloudClient:
         use_token = token if token else self._current_token
         if not use_token:
             return None, "No valid access token provided"
-        print(f"Using access token: {use_token}")
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
             retry_count = 0
@@ -304,36 +307,53 @@ class AzureCloudClient:
         except Exception as e:
             raise ValueError(f"Error parsing blob info: {str(e)}")
 
-    def download_ri_csv(self, csv_url: str, token: Optional[str] = None) -> Tuple[Optional[bytes], Optional[str]]:
+    def download_ri_csv_stream(self, csv_url: str, token: Optional[str] = None) -> Tuple[Optional[requests.Response], Optional[str]]:
         """
-        Download the RI billing CSV file.
+        Stream-download the RI billing CSV file, returning a Response object for line-by-line reading.
+        This avoids loading the entire CSV into memory.
         :param csv_url: CSV download URL obtained from get_ri_csv_url.
         :param token: Access token (optional).
-        :return: Tuple (csv_content, error).
+        :return: Tuple (response, error).
         """
         use_token = token if token else self._current_token
         if not use_token:
             return None, "No valid access token provided"
         try:
-            response = self.session.get(csv_url, timeout=60)
+            response = self.session.get(csv_url, stream=True, timeout=60)
             if response.status_code == 200:
-                return response.content, None
+                return response, None
             else:
                 error_msg = f"Failed to download CSV, status code: {response.status_code}"
                 try:
                     error_details = response.json()
                     error_msg += f", details: {error_details}"
-                except:
+                except json.JSONDecodeError:
                     pass
+                response.close()
                 return None, error_msg
         except requests.exceptions.RequestException as e:
             return None, f"Request exception: {str(e)}"
         except Exception as e:
             return None, f"Error processing request: {str(e)}"
 
-    def get_ri_csv_as_json(self, location_url: str, token: Optional[str] = None, max_retries: int = 10):
+    def download_ri_csv(self, csv_url: str, token: Optional[str] = None) -> Tuple[Optional[bytes], Optional[str]]:
+        """Download the RI billing CSV file. Prefer ``download_ri_csv_stream`` to avoid memory issues with large files."""
+        response, error = self.download_ri_csv_stream(csv_url, token)
+        if error:
+            return None, error
+        if not response:
+            return None, "Downloaded CSV content is empty"
+        try:
+            return response.content, None
+        finally:
+            response.close()
+
+    def get_ri_csv_as_json(
+        self, location_url: str, token: Optional[str] = None, max_retries: int = 10
+    ) -> Generator[Tuple[Optional[BillingRecord], Optional[str]], None, None]:
         """
         Fetch the RI billing CSV content and yield rows as parsed BillingRecord objects.
+        Uses streaming to avoid loading the entire CSV into memory.
         :param location_url: Polling location URL obtained from get_ri_location.
         :param token: Access token (optional).
         :param max_retries: Maximum number of polling retries (default 10).
@@ -347,20 +367,36 @@ class AzureCloudClient:
             yield None, "Unable to obtain a valid CSV download URL"
             return
 
-        csv_content, error = self.download_ri_csv(csv_url, token)
+        response, error = self.download_ri_csv_stream(csv_url, token)
         if error:
             yield None, f"Failed to download CSV content: {error}"
             return
-        if not csv_content:
+        if not response:
             yield None, "Downloaded CSV content is empty"
             return
 
         try:
-            csv_str = csv_content.decode("utf-8-sig")
-            csv_reader = csv.DictReader(csv_str.splitlines())
-            for row in csv_reader:
+            lines = response.iter_lines()
+
+            first_line = next(lines, None)
+            if first_line is not None:
+                first_line = first_line.decode("utf-8-sig")
+
+            if not first_line:
+                yield None, "CSV content is empty"
+                return
+
+            def _line_gen():
+                yield first_line
+                for line in lines:
+                    yield line.decode("utf-8-sig")
+
+            reader = csv.DictReader(_line_gen())
+            for row in reader:
                 yield BillingRecord.model_validate(row), None
         except UnicodeDecodeError as e:
             yield None, f"CSV decoding failed: {str(e)}"
         except Exception as e:
             yield None, f"Error converting CSV to records: {str(e)}"
+        finally:
+            response.close()
