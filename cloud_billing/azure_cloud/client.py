@@ -1,13 +1,17 @@
 import csv
 import json
+import logging
 import time
 from dataclasses import dataclass
+from collections.abc import Generator
 from typing import Any, Dict, Optional, Tuple
 
 import requests
 from requests_toolbelt.multipart import encoder
 
 from .types import BillingRecord
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -152,12 +156,12 @@ class AzureCloudClient:
                 try:
                     error_details = response.json()
                     error_msg += f", details: {error_details}"
-                except:
+                except json.JSONDecodeError:
                     pass
                 return None, error_msg
 
         except requests.exceptions.RequestException as e:
-            print(e)
+            logger.error("Request failed: %s", e)
             return None, f"Request exception: {str(e)}"
         except Exception as e:
             return None, f"Error processing request: {str(e)}"
@@ -190,7 +194,7 @@ class AzureCloudClient:
                 try:
                     error_details = response.json()
                     error_msg += f", details: {error_details}"
-                except:
+                except json.JSONDecodeError:
                     pass
                 return None, error_msg
 
@@ -265,7 +269,6 @@ class AzureCloudClient:
         use_token = token if token else self._current_token
         if not use_token:
             return None, "No valid access token provided"
-        print(f"Using access token: {use_token}")
         try:
             headers = {"Authorization": f"Bearer {use_token}"}
             retry_count = 0
@@ -324,7 +327,7 @@ class AzureCloudClient:
                 try:
                     error_details = response.json()
                     error_msg += f", details: {error_details}"
-                except:
+                except json.JSONDecodeError:
                     pass
                 response.close()
                 return None, error_msg
@@ -345,7 +348,9 @@ class AzureCloudClient:
         finally:
             response.close()
 
-    def get_ri_csv_as_json(self, location_url: str, token: Optional[str] = None, max_retries: int = 10):
+    def get_ri_csv_as_json(
+        self, location_url: str, token: Optional[str] = None, max_retries: int = 10
+    ) -> Generator[Tuple[Optional[BillingRecord], Optional[str]], None, None]:
         """
         Fetch the RI billing CSV content and yield rows as parsed BillingRecord objects.
         Uses streaming to avoid loading the entire CSV into memory.
@@ -371,27 +376,27 @@ class AzureCloudClient:
             return
 
         try:
-            lines = response.iter_lines(decode_unicode=True)
+            lines = response.iter_lines()
+
             first_line = next(lines, None)
-            if first_line and first_line.startswith("﻿"):
-                first_line = first_line[1:]
+            if first_line is not None:
+                first_line = first_line.decode("utf-8-sig")
+
             if not first_line:
-                response.close()
                 yield None, "CSV content is empty"
                 return
 
             def _line_gen():
                 yield first_line
                 for line in lines:
-                    yield line
+                    yield line.decode("utf-8-sig")
 
             reader = csv.DictReader(_line_gen())
             for row in reader:
                 yield BillingRecord.model_validate(row), None
-            response.close()
         except UnicodeDecodeError as e:
-            response.close()
             yield None, f"CSV decoding failed: {str(e)}"
         except Exception as e:
-            response.close()
             yield None, f"Error converting CSV to records: {str(e)}"
+        finally:
+            response.close()
