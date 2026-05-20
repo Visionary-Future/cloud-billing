@@ -1,6 +1,6 @@
 [project]
 name = "cloud-billing"
-version = "0.1.0"
+version = "0.1.25"
 description = "Multi-cloud billing data retrieval SDK for Alibaba Cloud, AWS, Azure, and Huawei Cloud with unified API"
 authors = [
     {name = "Kai Yang", email = "kaiyang939325@gmail.com"}
