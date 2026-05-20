@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.25"
 
 from .alibaba_cloud import AlibabaCloudClient
 from .aws_cloud import AWSCloudClient
