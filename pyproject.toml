@@ -63,7 +63,7 @@ Issues = "https://github.com/visionary-future/cloud-billing/issues"
 [[tool.poetry.source]]
 name = "tuna"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-priority = "primary"
+priority = "supplemental"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
