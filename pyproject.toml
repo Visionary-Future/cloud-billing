@@ -5,7 +5,7 @@ description = "Multi-cloud billing data retrieval SDK for Alibaba Cloud, AWS, Az
 authors = [
     {name = "Kai Yang", email = "kaiyang939325@gmail.com"}
 ]
-license = "GPL-3.0-or-later"
+license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = [
