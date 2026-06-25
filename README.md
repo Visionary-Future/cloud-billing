@@ -77,4 +77,4 @@ bill_items, error = client.query_monthly_bill_summary(bill_cycle="2024-01")
 
 ## License
 
-This project is licensed under the GPL-3.0-or-later License - see the [LICENSE](https://github.com/visionary-future/cloud-billing/blob/main/LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/visionary-future/cloud-billing/blob/main/LICENSE) file for details.
