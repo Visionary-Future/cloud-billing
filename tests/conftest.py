@@ -165,5 +165,28 @@ def _setup_cloud_sdk_mocks() -> None:
     ]:
         _ensure_module(mod_name)
 
+    # --- Tencent Cloud SDK stubs (only when real SDK not installed) ---
+    try:
+        import tencentcloud  # noqa: F401
+    except ImportError:
+        _ensure_module("tencentcloud.common")
+        _ensure_module("tencentcloud.common.credential")
+        sys.modules["tencentcloud.common.credential"].Credential = MagicMock
+        _ensure_module("tencentcloud.common.exception")
+        _ensure_module("tencentcloud.common.exception.tencent_cloud_sdk_exception")
+        sys.modules["tencentcloud.common.exception.tencent_cloud_sdk_exception"].TencentCloudSDKException = type(
+            "TencentCloudSDKException",
+            (Exception,),
+            {"code": "", "message": "", "requestId": ""},
+        )
+        _ensure_module("tencentcloud.common.profile.client_profile")
+        sys.modules["tencentcloud.common.profile.client_profile"].ClientProfile = MagicMock
+        _ensure_module("tencentcloud.common.profile.http_profile")
+        sys.modules["tencentcloud.common.profile.http_profile"].HttpProfile = MagicMock
+        _ensure_module("tencentcloud.billing")
+        tencent_billing_mod = _ensure_module("tencentcloud.billing.v20180709")
+        tencent_billing_mod.billing_client = types.ModuleType("billing_client")
+        tencent_billing_mod.models = types.ModuleType("models")
+
 
 _setup_cloud_sdk_mocks()
