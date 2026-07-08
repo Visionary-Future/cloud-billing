@@ -29,9 +29,13 @@
   <main class="max-w-6xl mx-auto px-4 py-8">
 
     <!-- Tabs -->
-    <div class="flex border-b border-gray-200 mb-6 gap-6">
+    <div class="flex border-b border-gray-200 mb-6 gap-6 flex-wrap">
       <button id="tab-alibaba" onclick="switchTab('alibaba')" class="pb-3 px-1 text-sm tab-active">阿里云账单</button>
+      <button id="tab-aws" onclick="switchTab('aws')" class="pb-3 px-1 text-sm tab-inactive">AWS 账单</button>
       <button id="tab-azure" onclick="switchTab('azure')" class="pb-3 px-1 text-sm tab-inactive">Azure 账单</button>
+      <button id="tab-huawei" onclick="switchTab('huawei')" class="pb-3 px-1 text-sm tab-inactive">华为云账单</button>
+      <button id="tab-tencent" onclick="switchTab('tencent')" class="pb-3 px-1 text-sm tab-inactive">腾讯云账单</button>
+      <button id="tab-kubecost" onclick="switchTab('kubecost')" class="pb-3 px-1 text-sm tab-inactive">Kubecost</button>
     </div>
 
     <!-- ==================== ALIBABA PANEL ==================== -->
@@ -97,6 +101,79 @@
           <table class="min-w-full text-xs text-left">
             <thead id="ali-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
             <tbody id="ali-tbody" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== AWS PANEL ==================== -->
+    <div id="panel-aws" class="hidden">
+      <form id="form-aws" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">AWS 凭证</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Access Key ID</label>
+            <input id="aws-ak-id" type="text" placeholder="AKIA..." autocomplete="off"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Secret Access Key</label>
+            <input id="aws-ak-secret" type="password" placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Region</label>
+            <input id="aws-region" type="text" value="us-east-1"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">查询参数</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">开始日期（YYYY-MM-DD）</label>
+              <input id="aws-start" type="text" placeholder="2025-12-01"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">结束日期（YYYY-MM-DD）</label>
+              <input id="aws-end" type="text" placeholder="2025-12-31"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">粒度</label>
+              <select id="aws-granularity"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <option value="MONTHLY">月</option>
+                <option value="DAILY">日</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="fetchAws()" id="btn-aws-query"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition">
+            <svg id="aws-spinner" class="hidden w-4 h-4 spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            查询
+          </button>
+          <button type="button" onclick="downloadAwsCsv()" id="btn-aws-csv"
+            class="hidden border border-green-500 text-green-600 hover:bg-green-50 text-sm font-medium px-5 py-2 rounded-lg transition">
+            ↓ 下载 CSV
+          </button>
+        </div>
+      </form>
+      <div id="aws-status" class="mt-4 text-sm text-gray-500 hidden"></div>
+      <div id="aws-result" class="mt-4 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span id="aws-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="table-container" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead id="aws-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
+            <tbody id="aws-tbody" class="divide-y divide-gray-100"></tbody>
           </table>
         </div>
       </div>
@@ -178,6 +255,202 @@
       </div>
     </div>
 
+    <!-- ==================== HUAWEI PANEL ==================== -->
+    <div id="panel-huawei" class="hidden">
+      <form id="form-huawei" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">华为云凭证</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Access Key</label>
+            <input id="hw-ak" type="text" placeholder="..." autocomplete="off"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Secret Key</label>
+            <input id="hw-sk" type="password" placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Domain ID</label>
+            <input id="hw-domain" type="text" placeholder="..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Region</label>
+            <input id="hw-region" type="text" value="cn-east-3"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">账期（YYYY-MM）</label>
+              <input id="hw-cycle" type="text" placeholder="2025-12"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="fetchHuawei()" id="btn-hw-query"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition">
+            <svg id="hw-spinner" class="hidden w-4 h-4 spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            查询
+          </button>
+          <button type="button" onclick="downloadHwCsv()" id="btn-hw-csv"
+            class="hidden border border-green-500 text-green-600 hover:bg-green-50 text-sm font-medium px-5 py-2 rounded-lg transition">
+            ↓ 下载 CSV
+          </button>
+        </div>
+      </form>
+      <div id="hw-status" class="mt-4 text-sm text-gray-500 hidden"></div>
+      <div id="hw-result" class="mt-4 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span id="hw-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="table-container" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead id="hw-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
+            <tbody id="hw-tbody" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TENCENT PANEL ==================== -->
+    <div id="panel-tencent" class="hidden">
+      <form id="form-tencent" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">腾讯云凭证</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Secret ID</label>
+            <input id="tx-secret-id" type="text" placeholder="AKID..." autocomplete="off"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Secret Key</label>
+            <input id="tx-secret-key" type="password" placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Region</label>
+            <input id="tx-region" type="text" value="ap-guangzhou"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">月份（YYYY-MM）</label>
+              <input id="tx-month" type="text" placeholder="2025-12"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">付费模式（可选）</label>
+              <select id="tx-paymode"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <option value="">全部</option>
+                <option value="postPay">按量计费</option>
+                <option value="prePay">包年包月</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="fetchTencent()" id="btn-tx-query"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition">
+            <svg id="tx-spinner" class="hidden w-4 h-4 spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            查询
+          </button>
+          <button type="button" onclick="downloadTxCsv()" id="btn-tx-csv"
+            class="hidden border border-green-500 text-green-600 hover:bg-green-50 text-sm font-medium px-5 py-2 rounded-lg transition">
+            ↓ 下载 CSV
+          </button>
+        </div>
+      </form>
+      <div id="tx-status" class="mt-4 text-sm text-gray-500 hidden"></div>
+      <div id="tx-result" class="mt-4 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span id="tx-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="table-container" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead id="tx-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
+            <tbody id="tx-tbody" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== KUBECOST PANEL ==================== -->
+    <div id="panel-kubecost" class="hidden">
+      <form id="form-kubecost" class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">Kubecost 连接</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Kubecost 地址</label>
+            <input id="kc-url" type="text" placeholder="http://kubecost.example.com:9090"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div class="flex items-end pb-1">
+            <button type="button" onclick="testKubecost()" id="btn-kc-test"
+              class="border border-blue-500 text-blue-600 hover:bg-blue-50 text-sm font-medium px-4 py-2 rounded-lg transition w-full">
+              测试连接
+            </button>
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">开始日期（YYYY-MM-DD）</label>
+              <input id="kc-start" type="text" placeholder="2025-12-01"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">结束日期（YYYY-MM-DD）</label>
+              <input id="kc-end" type="text" placeholder="2025-12-31"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">时间窗口</label>
+              <select id="kc-window"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <option value="1d">日</option>
+                <option value="1h">小时</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="fetchKubecost()" id="btn-kc-query"
+            class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center gap-2 transition">
+            <svg id="kc-spinner" class="hidden w-4 h-4 spinner" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+            查询
+          </button>
+        </div>
+      </form>
+      <div id="kc-status" class="mt-4 text-sm text-gray-500 hidden"></div>
+      <div id="kc-result" class="mt-4 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <span id="kc-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="table-container" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead id="kc-thead" class="bg-gray-50 text-gray-500 uppercase sticky top-0"></thead>
+            <tbody id="kc-tbody" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
@@ -239,50 +512,23 @@
     }
 
     // Tab switching
+    const ALL_TABS = ['alibaba', 'aws', 'azure', 'huawei', 'tencent', 'kubecost'];
     function switchTab(tab) {
-      ['alibaba', 'azure'].forEach(t => {
+      ALL_TABS.forEach(t => {
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
         document.getElementById(`tab-${t}`).className = `pb-3 px-1 text-sm ${t === tab ? 'tab-active' : 'tab-inactive'}`;
       });
     }
 
-    // -----------------------------------------------------------------------
-    // Init: restore saved credentials + default dates
-    // -----------------------------------------------------------------------
-    window.addEventListener('DOMContentLoaded', () => {
-      persist(['ali-ak-id', 'ali-ak-secret', 'ali-region', 'ali-cycle',
-               'az-tenant', 'az-client-id', 'az-secret', 'az-account', 'az-start', 'az-end']);
-      const lm = lastMonth();
-      if (!document.getElementById('ali-cycle').value) document.getElementById('ali-cycle').value = lm.cycle;
-      if (!document.getElementById('az-start').value) document.getElementById('az-start').value = lm.start;
-      if (!document.getElementById('az-end').value) document.getElementById('az-end').value = lm.end;
-    });
-
-    // -----------------------------------------------------------------------
-    // Alibaba
-    // -----------------------------------------------------------------------
-    let aliLastItems = null;
-
-    async function fetchAlibaba() {
-      const body = {
-        access_key_id: document.getElementById('ali-ak-id').value.trim(),
-        access_key_secret: document.getElementById('ali-ak-secret').value.trim(),
-        region_id: document.getElementById('ali-region').value.trim() || 'cn-hangzhou',
-        billing_cycle: document.getElementById('ali-cycle').value.trim(),
-        billing_date: document.getElementById('ali-date').value.trim() || null,
-      };
-      if (!body.access_key_id || !body.access_key_secret || !body.billing_cycle) {
-        showError('ali-status', '请填写 Access Key ID、Access Key Secret 和账期');
-        return;
-      }
-
-      setLoading('ali-spinner', 'btn-ali-query', true);
-      document.getElementById('ali-status').classList.add('hidden');
-      document.getElementById('ali-result').classList.add('hidden');
-      document.getElementById('btn-ali-csv').classList.add('hidden');
+    // Generic query + CSV for JSON-list endpoints
+    async function genericFetch(endpoint, body, spinnerId, btnId, statusId, resultId, countId, theadId, tbodyId, csvBtnId) {
+      setLoading(spinnerId, btnId, true);
+      document.getElementById(statusId).classList.add('hidden');
+      document.getElementById(resultId).classList.add('hidden');
+      document.getElementById(csvBtnId).classList.add('hidden');
 
       try {
-        const res = await fetch(`${BASE}/api/alibaba/billing`, {
+        const res = await fetch(`${BASE}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -290,28 +536,20 @@
         const data = await safeJson(res);
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
 
-        aliLastItems = data.items;
-        document.getElementById('ali-count').textContent = `共 ${data.total} 条记录`;
-        renderTable('ali-thead', 'ali-tbody', data.items);
-        document.getElementById('ali-result').classList.remove('hidden');
-        document.getElementById('btn-ali-csv').classList.remove('hidden');
+        document.getElementById(countId).textContent = `共 ${data.total} 条记录`;
+        renderTable(theadId, tbodyId, data.items || data.results || []);
+        document.getElementById(resultId).classList.remove('hidden');
+        document.getElementById(csvBtnId).classList.remove('hidden');
       } catch (e) {
-        showError('ali-status', `查询失败：${e.message}`);
+        showError(statusId, `查询失败：${e.message}`);
       } finally {
-        setLoading('ali-spinner', 'btn-ali-query', false);
+        setLoading(spinnerId, btnId, false);
       }
     }
 
-    async function downloadAliCsv() {
-      const body = {
-        access_key_id: document.getElementById('ali-ak-id').value.trim(),
-        access_key_secret: document.getElementById('ali-ak-secret').value.trim(),
-        region_id: document.getElementById('ali-region').value.trim() || 'cn-hangzhou',
-        billing_cycle: document.getElementById('ali-cycle').value.trim(),
-        billing_date: document.getElementById('ali-date').value.trim() || null,
-      };
+    async function genericCsvDownload(endpoint, body, statusId, filename) {
       try {
-        const res = await fetch(`${BASE}/api/alibaba/billing/csv`, {
+        const res = await fetch(`${BASE}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -321,12 +559,59 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `alibaba_billing_${body.billing_cycle}.csv`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       } catch (e) {
-        showError('ali-status', `下载失败：${e.message}`);
+        showError(statusId, `下载失败：${e.message}`);
       }
+    }
+
+    // -----------------------------------------------------------------------
+    // Init: restore saved credentials + default dates
+    // -----------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      persist([
+        'ali-ak-id', 'ali-ak-secret', 'ali-region', 'ali-cycle',
+        'aws-ak-id', 'aws-ak-secret', 'aws-region', 'aws-start', 'aws-end',
+        'az-tenant', 'az-client-id', 'az-secret', 'az-account', 'az-start', 'az-end',
+        'hw-ak', 'hw-sk', 'hw-domain', 'hw-region', 'hw-cycle',
+        'tx-secret-id', 'tx-secret-key', 'tx-region', 'tx-month',
+        'kc-url', 'kc-start', 'kc-end',
+      ]);
+      const lm = lastMonth();
+      if (!document.getElementById('ali-cycle').value) document.getElementById('ali-cycle').value = lm.cycle;
+      if (!document.getElementById('aws-start').value) document.getElementById('aws-start').value = lm.start;
+      if (!document.getElementById('aws-end').value) document.getElementById('aws-end').value = lm.end;
+      if (!document.getElementById('az-start').value) document.getElementById('az-start').value = lm.start;
+      if (!document.getElementById('az-end').value) document.getElementById('az-end').value = lm.end;
+      if (!document.getElementById('hw-cycle').value) document.getElementById('hw-cycle').value = lm.cycle;
+      if (!document.getElementById('tx-month').value) document.getElementById('tx-month').value = lm.cycle;
+      if (!document.getElementById('kc-start').value) document.getElementById('kc-start').value = lm.start;
+      if (!document.getElementById('kc-end').value) document.getElementById('kc-end').value = lm.end;
+    });
+
+    // -----------------------------------------------------------------------
+    // Alibaba
+    // -----------------------------------------------------------------------
+    function getAliBody() {
+      return {
+        access_key_id: document.getElementById('ali-ak-id').value.trim(),
+        access_key_secret: document.getElementById('ali-ak-secret').value.trim(),
+        region_id: document.getElementById('ali-region').value.trim() || 'cn-hangzhou',
+        billing_cycle: document.getElementById('ali-cycle').value.trim(),
+        billing_date: document.getElementById('ali-date').value.trim() || null,
+      };
+    }
+    function fetchAlibaba() {
+      const body = getAliBody();
+      if (!body.access_key_id || !body.access_key_secret || !body.billing_cycle) {
+        showError('ali-status', '请填写 Access Key ID、Access Key Secret 和账期'); return;
+      }
+      genericFetch('/api/alibaba/billing', body, 'ali-spinner', 'btn-ali-query', 'ali-status', 'ali-result', 'ali-count', 'ali-thead', 'ali-tbody', 'btn-ali-csv');
+    }
+    function downloadAliCsv() {
+      genericCsvDownload('/api/alibaba/billing/csv', getAliBody(), 'ali-status', `alibaba_billing_${document.getElementById('ali-cycle').value}.csv`);
     }
 
     // -----------------------------------------------------------------------
@@ -434,6 +719,140 @@
           setAzStatus(`网络错误（已连续失败 ${azConsecErrors} 次）：${e.message}`, false);
         }
         // transient error — stay in poll loop and try again next tick
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // AWS
+    // -----------------------------------------------------------------------
+    function getAwsBody() {
+      return {
+        access_key_id: document.getElementById('aws-ak-id').value.trim(),
+        secret_access_key: document.getElementById('aws-ak-secret').value.trim(),
+        region_name: document.getElementById('aws-region').value.trim() || 'us-east-1',
+        start_date: document.getElementById('aws-start').value.trim(),
+        end_date: document.getElementById('aws-end').value.trim(),
+        granularity: document.getElementById('aws-granularity').value,
+      };
+    }
+    function fetchAws() {
+      const body = getAwsBody();
+      if (!body.access_key_id || !body.secret_access_key || !body.start_date || !body.end_date) {
+        showError('aws-status', '请填写 AWS 凭证和日期范围'); return;
+      }
+      genericFetch('/api/aws/cost-and-usage', body, 'aws-spinner', 'btn-aws-query', 'aws-status', 'aws-result', 'aws-count', 'aws-thead', 'aws-tbody', 'btn-aws-csv');
+    }
+    function downloadAwsCsv() {
+      genericCsvDownload('/api/aws/cost-and-usage/csv', getAwsBody(), 'aws-status', `aws_cost_${document.getElementById('aws-start').value}_${document.getElementById('aws-end').value}.csv`);
+    }
+
+    // -----------------------------------------------------------------------
+    // Huawei
+    // -----------------------------------------------------------------------
+    function getHwBody() {
+      return {
+        access_key: document.getElementById('hw-ak').value.trim(),
+        secret_key: document.getElementById('hw-sk').value.trim(),
+        domain_id: document.getElementById('hw-domain').value.trim(),
+        region_id: document.getElementById('hw-region').value.trim() || 'cn-east-3',
+        bill_cycle: document.getElementById('hw-cycle').value.trim(),
+      };
+    }
+    function fetchHuawei() {
+      const body = getHwBody();
+      if (!body.access_key || !body.secret_key || !body.domain_id || !body.bill_cycle) {
+        showError('hw-status', '请填写华为云凭证和账期'); return;
+      }
+      genericFetch('/api/huawei/monthly-bill', body, 'hw-spinner', 'btn-hw-query', 'hw-status', 'hw-result', 'hw-count', 'hw-thead', 'hw-tbody', 'btn-hw-csv');
+    }
+    function downloadHwCsv() {
+      genericCsvDownload('/api/huawei/monthly-bill/csv', getHwBody(), 'hw-status', `huawei_bill_${document.getElementById('hw-cycle').value}.csv`);
+    }
+
+    // -----------------------------------------------------------------------
+    // Tencent
+    // -----------------------------------------------------------------------
+    function getTxBody() {
+      const body = {
+        secret_id: document.getElementById('tx-secret-id').value.trim(),
+        secret_key: document.getElementById('tx-secret-key').value.trim(),
+        region: document.getElementById('tx-region').value.trim() || 'ap-guangzhou',
+        month: document.getElementById('tx-month').value.trim(),
+      };
+      const pm = document.getElementById('tx-paymode').value;
+      if (pm) body.pay_mode = pm;
+      return body;
+    }
+    function fetchTencent() {
+      const body = getTxBody();
+      if (!body.secret_id || !body.secret_key || !body.month) {
+        showError('tx-status', '请填写腾讯云凭证和月份'); return;
+      }
+      genericFetch('/api/tencent/bill-detail', body, 'tx-spinner', 'btn-tx-query', 'tx-status', 'tx-result', 'tx-count', 'tx-thead', 'tx-tbody', 'btn-tx-csv');
+    }
+    function downloadTxCsv() {
+      genericCsvDownload('/api/tencent/bill-detail/csv', getTxBody(), 'tx-status', `tencent_bill_${document.getElementById('tx-month').value}.csv`);
+    }
+
+    // -----------------------------------------------------------------------
+    // Kubecost
+    // -----------------------------------------------------------------------
+    function getKcBody() {
+      return {
+        base_url: document.getElementById('kc-url').value.trim(),
+        start_date: document.getElementById('kc-start').value.trim(),
+        end_date: document.getElementById('kc-end').value.trim(),
+        window: document.getElementById('kc-window').value,
+      };
+    }
+    async function testKubecost() {
+      const url = document.getElementById('kc-url').value.trim();
+      if (!url) { showError('kc-status', '请填写 Kubecost 地址'); return; }
+      setLoading('kc-spinner', 'btn-kc-test', true);
+      try {
+        const res = await fetch(`${BASE}/api/kubecost/test-connection`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base_url: url }),
+        });
+        const data = await safeJson(res);
+        if (data.connected) {
+          const el = document.getElementById('kc-status');
+          el.innerHTML = '<div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">✅ 连接成功</div>';
+          el.classList.remove('hidden');
+        } else {
+          showError('kc-status', `连接失败：${data.error || '未知错误'}`);
+        }
+      } catch (e) {
+        showError('kc-status', `连接测试失败：${e.message}`);
+      } finally {
+        setLoading('kc-spinner', 'btn-kc-test', false);
+      }
+    }
+    async function fetchKubecost() {
+      const body = getKcBody();
+      if (!body.base_url || !body.start_date || !body.end_date) {
+        showError('kc-status', '请填写 Kubecost 地址和日期范围'); return;
+      }
+      setLoading('kc-spinner', 'btn-kc-query', true);
+      document.getElementById('kc-status').classList.add('hidden');
+      document.getElementById('kc-result').classList.add('hidden');
+      try {
+        const res = await fetch(`${BASE}/api/kubecost/allocation`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        document.getElementById('kc-count').textContent = `共 ${data.total} 条记录`;
+        renderTable('kc-thead', 'kc-tbody', data.items || []);
+        document.getElementById('kc-result').classList.remove('hidden');
+        if (data.errors && data.errors.length) {
+          showError('kc-status', `警告：${data.errors.length} 条错误 — ${data.errors.slice(0, 3).join('; ')}`);
+        }
+      } catch (e) {
+        showError('kc-status', `查询失败：${e.message}`);
+      } finally {
+        setLoading('kc-spinner', 'btn-kc-query', false);
       }
     }
 
