@@ -25,7 +25,7 @@ from cloud_billing.alibaba_cloud.client import (
     PaginationParams,
 )
 from cloud_billing.alibaba_cloud.exceptions import APIError, InvalidResponseError
-from cloud_billing.alibaba_cloud.types import AmortizedItem, QueryInstanceBillItem
+from cloud_billing.alibaba_cloud.types import AmortizedItem, QueryAccountBillItem, QueryInstanceBillItem
 
 
 def _make_bill_item(iid: str = "i-bp1234567890", product: str = "ECS") -> dict:
@@ -417,6 +417,158 @@ class TestParseResponse:
     def test_invalid_response_raises(self, client):
         with pytest.raises(InvalidResponseError):
             client._parse_response({"not": "valid"})
+
+
+# ---------------------------------------------------------------------------
+# fetch_daily_account_bill_by_product
+# ---------------------------------------------------------------------------
+def _make_account_bill_item(product: str = "ecs", amount: float = 10.5) -> dict:
+    return {
+        "PipCode": product,
+        "PretaxAmount": amount,
+        "BillingDate": "2025-12-01",
+        "ProductName": product.upper(),
+        "AdjustAmount": 0.0,
+        "OwnerName": "test-owner",
+        "Currency": "CNY",
+        "BillAccountName": "test-account",
+        "SubscriptionType": "PayAsYouGo",
+        "DeductedByCashCoupons": 0.0,
+        "BizType": "",
+        "OwnerID": 123456,
+        "DeductedByPrepaidCard": 0.0,
+        "DeductedByCoupons": 0.0,
+        "BillAccountID": 123456,
+        "PaymentAmount": amount,
+        "InvoiceDiscount": 0.0,
+        "OutstandingAmount": 0.0,
+        "CostUnit": "未分配",
+        "PretaxGrossAmount": amount,
+        "CashAmount": amount,
+        "ProductCode": product,
+    }
+
+
+def _make_account_bill_response(
+    items: list, page_num: int = 1, page_size: int = 300, total_count: int | None = None
+) -> dict:
+    return {
+        "Code": "Success",
+        "Message": "Successful!",
+        "RequestId": "test-account-bill-request-id",
+        "Success": True,
+        "Data": {
+            "PageNum": page_num,
+            "BillingCycle": "2025-12",
+            "AccountID": "123456",
+            "PageSize": page_size,
+            "TotalCount": total_count if total_count is not None else len(items),
+            "AccountName": "test-account",
+            "Items": {"Item": items},
+        },
+    }
+
+
+class TestFetchDailyAccountBillByProduct:
+    def test_single_page(self, client):
+        items = [_make_account_bill_item("ecs"), _make_account_bill_item("rds", 20.0)]
+        client.make_request = MagicMock(return_value=_make_account_bill_response(items))
+
+        result = client.fetch_daily_account_bill_by_product("2025-12", "2025-12-01")
+        assert len(result) == 2
+        assert isinstance(result[0], QueryAccountBillItem)
+        assert result[0].ProductCode == "ecs"
+        assert result[1].ProductName == "RDS"
+        assert result[0].OwnerID == "123456"
+
+    def test_without_billing_date_monthly(self, client):
+        items = [_make_account_bill_item("ecs")]
+        client.make_request = MagicMock(return_value=_make_account_bill_response(items))
+
+        result = client.fetch_daily_account_bill_by_product("2025-12")
+        assert len(result) == 1
+        client.make_request.assert_called_once()
+
+    def test_multi_page(self, client):
+        page1 = [_make_account_bill_item("ecs")]
+        page2 = [_make_account_bill_item("rds")]
+        client.make_request = MagicMock(
+            side_effect=[
+                _make_account_bill_response(page1, page_num=1, page_size=1, total_count=2),
+                _make_account_bill_response(page2, page_num=2, page_size=1, total_count=2),
+            ]
+        )
+
+        result = client.fetch_daily_account_bill_by_product("2025-12", "2025-12-01", page_size=1)
+        assert len(result) == 2
+        assert result[0].ProductCode == "ecs"
+        assert result[1].ProductCode == "rds"
+
+    def test_empty_result(self, client):
+        client.make_request = MagicMock(return_value=_make_account_bill_response([]))
+
+        result = client.fetch_daily_account_bill_by_product("2025-12", "2025-12-01")
+        assert result == []
+
+    def test_invalid_billing_cycle(self, client):
+        with pytest.raises(ValueError, match="Invalid billing cycle format"):
+            client.fetch_daily_account_bill_by_product("bad", "2025-12-01")
+
+    def test_invalid_billing_date(self, client):
+        with pytest.raises(ValueError, match="Invalid billing date format"):
+            client.fetch_daily_account_bill_by_product("2025-12", "2025/12/01")
+
+    def test_api_error_wraps_exception(self, client):
+        client.make_request = MagicMock(side_effect=RuntimeError("timeout"))
+
+        with pytest.raises(APIError, match="Failed to fetch daily account bill by product"):
+            client.fetch_daily_account_bill_by_product("2025-12", "2025-12-01")
+
+    def test_invalid_response_raises(self, client):
+        client.make_request = MagicMock(return_value={"not": "valid"})
+
+        with pytest.raises(InvalidResponseError):
+            client.fetch_daily_account_bill_by_product("2025-12", "2025-12-01")
+
+
+class TestBuildAccountBillRequest:
+    def test_daily_request(self, client):
+        req = client._build_account_bill_request(
+            billing_cycle="2025-12",
+            billing_date="2025-12-01",
+            page_num=1,
+            page_size=100,
+        )
+        assert req.get_action_name() == "QueryAccountBill"
+        params = req.get_query_params()
+        assert params["BillingCycle"] == "2025-12"
+        assert params["BillingDate"] == "2025-12-01"
+        assert params["Granularity"] == "DAILY"
+        assert params["IsGroupByProduct"] == "true"
+        assert params["PageNum"] == "1"
+        assert params["PageSize"] == "100"
+
+    def test_monthly_request_without_billing_date(self, client):
+        req = client._build_account_bill_request(
+            billing_cycle="2025-12",
+            billing_date=None,
+            page_num=1,
+            page_size=100,
+        )
+        params = req.get_query_params()
+        assert params["Granularity"] == "MONTHLY"
+        assert "BillingDate" not in params
+
+    def test_request_with_product_code(self, client):
+        req = client._build_account_bill_request(
+            billing_cycle="2025-12",
+            billing_date="2025-12-01",
+            page_num=1,
+            page_size=100,
+            product_code="ecs",
+        )
+        params = req.get_query_params()
+        assert params["ProductCode"] == "ecs"
 
 
 # ---------------------------------------------------------------------------
