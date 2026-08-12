@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class SUBSCRIPTION_TYPE(Enum):
@@ -180,3 +180,72 @@ class AmortizedResponse(BaseModel):
     Data: AmortizedData
     Code: str
     Success: bool
+
+
+class QueryAccountBillItem(BaseModel):
+    """Account bill item aggregated by product (QueryAccountBill)."""
+
+    PipCode: Optional[str] = None
+    PretaxAmount: float = 0.0
+    BillingDate: Optional[str] = None
+    ProductName: Optional[str] = None
+    AdjustAmount: float = 0.0
+    OwnerName: Optional[str] = None
+    Currency: Optional[str] = None
+    BillAccountName: Optional[str] = None
+    SubscriptionType: Optional[str] = None
+    DeductedByCashCoupons: float = 0.0
+    BizType: Optional[str] = None
+    OwnerID: Optional[str] = None
+    DeductedByPrepaidCard: float = 0.0
+    DeductedByCoupons: float = 0.0
+    BillAccountID: Optional[str] = None
+    PaymentAmount: float = 0.0
+    InvoiceDiscount: float = 0.0
+    OutstandingAmount: float = 0.0
+    CostUnit: Optional[str] = None
+    PretaxGrossAmount: float = 0.0
+    CashAmount: float = 0.0
+    ProductCode: Optional[str] = None
+
+    @field_validator("OwnerID", "BillAccountID", mode="before")
+    @classmethod
+    def parse_id_as_str(cls, value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        return str(value)
+
+
+class QueryAccountBillData(BaseModel):
+    PageNum: int = 1
+    BillingCycle: str
+    AccountID: str
+    PageSize: int = 20
+    TotalCount: int = 0
+    AccountName: str
+    Items: List[QueryAccountBillItem] = Field(default_factory=list)
+
+    @field_validator("Items", mode="before")
+    @classmethod
+    def unwrap_items(cls, value: Any) -> List[Any]:
+        """Alibaba returns Items as {"Item": [...]} for QueryAccountBill."""
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        if isinstance(value, dict):
+            item = value.get("Item", [])
+            if item is None:
+                return []
+            if isinstance(item, list):
+                return item
+            return [item]
+        return []
+
+
+class QueryAccountBillResponse(BaseModel):
+    Code: str
+    Message: str
+    RequestId: str
+    Success: bool
+    Data: QueryAccountBillData

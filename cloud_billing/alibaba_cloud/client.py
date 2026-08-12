@@ -30,6 +30,8 @@ from .exceptions import APIError, InvalidResponseError
 from .types import (
     AmortizedItem,
     AmortizedResponse,
+    QueryAccountBillItem,
+    QueryAccountBillResponse,
     QueryInstanceBillItem,
     QueryInstanceBillResponse,
 )
@@ -165,6 +167,111 @@ class AlibabaCloudClient:
                 break
 
         return items
+
+    def fetch_daily_account_bill_by_product(
+        self,
+        billing_cycle: str,
+        billing_date: Optional[str] = None,
+        product_code: Optional[str] = None,
+        page_size: int = DEFAULT_MAX_PAGE_SIZE,
+    ) -> List[QueryAccountBillItem]:
+        """Fetch account bill aggregated by product.
+
+        Uses QueryAccountBill with IsGroupByProduct=true.
+        When billing_date is provided, queries DAILY granularity for that day;
+        otherwise queries MONTHLY for the billing cycle.
+
+        Args:
+            billing_cycle: Billing cycle in YYYY-MM format.
+            billing_date: Optional billing date in YYYY-MM-DD format for daily query.
+            product_code: Optional product code filter (e.g. "ecs", "rds").
+            page_size: Page size for pagination (default 300, max 300).
+
+        Returns:
+            List of account bill items grouped by product.
+
+        Raises:
+            ValueError: When billing_cycle or billing_date format is invalid.
+            APIError: When the API request fails.
+            InvalidResponseError: When the response cannot be parsed.
+        """
+        self._validate_billing_cycle(billing_cycle)
+        if billing_date is not None:
+            self._validate_billing_date(billing_date)
+
+        items: List[QueryAccountBillItem] = []
+        page_num = 1
+
+        while True:
+            request = self._build_account_bill_request(
+                billing_cycle=billing_cycle,
+                billing_date=billing_date,
+                page_num=page_num,
+                page_size=page_size,
+                product_code=product_code,
+            )
+            response = self._send_account_bill_request(request)
+            bill_response = self._parse_account_bill_response(response)
+
+            items.extend(bill_response.Data.Items)
+
+            total = bill_response.Data.TotalCount
+            if page_num * page_size >= total or not bill_response.Data.Items:
+                break
+            page_num += 1
+
+        return items
+
+    def _build_account_bill_request(
+        self,
+        billing_cycle: str,
+        billing_date: Optional[str],
+        page_num: int,
+        page_size: int,
+        product_code: Optional[str] = None,
+    ) -> CommonRequest:
+        request = CommonRequest()
+        request.set_accept_format("json")
+        request.set_domain("business.aliyuncs.com")
+        request.set_method("POST")
+        request.set_protocol_type("https")
+        request.set_version("2017-12-14")
+        request.set_action_name("QueryAccountBill")
+
+        request.add_query_param("BillingCycle", billing_cycle)
+        request.add_query_param("IsGroupByProduct", "true")
+        request.add_query_param("PageNum", str(page_num))
+        request.add_query_param("PageSize", str(page_size))
+
+        if billing_date:
+            request.add_query_param("BillingDate", billing_date)
+            request.add_query_param("Granularity", "DAILY")
+        else:
+            request.add_query_param("Granularity", "MONTHLY")
+
+        if product_code:
+            request.add_query_param("ProductCode", product_code)
+
+        return request
+
+    def _validate_billing_date(self, billing_date: str) -> None:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", billing_date):
+            raise ValueError(f"Invalid billing date format: {billing_date}, expected YYYY-MM-DD")
+
+    def _send_account_bill_request(self, request: CommonRequest) -> dict[str, Any]:
+        try:
+            return self.make_request(request=request)
+        except Exception as e:
+            raise APIError(f"Failed to fetch daily account bill by product: {str(e)}") from e
+
+    def _parse_account_bill_response(self, response: dict[str, Any]) -> QueryAccountBillResponse:
+        try:
+            return QueryAccountBillResponse.model_validate(response)
+        except ValidationError as e:
+            raise InvalidResponseError(
+                message=f"Invalid account bill response format: {str(e)}",
+                response_data=response,
+            ) from e
 
     def _build_request(self, billing_cycle: str, next_token: str | None = None) -> CommonRequest:
         request = CommonRequest()

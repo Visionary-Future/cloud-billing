@@ -209,3 +209,6 @@ __marimo__/
 .DS_Store
 run.sh
 .vscode/
+
+# Prompt
+prompts/*

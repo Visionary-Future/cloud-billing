@@ -45,6 +45,21 @@ class AlibabaAmortizedRequest(AlibabaCredentials):
     )
 
 
+class AlibabaDailyProductBillRequest(AlibabaCredentials):
+    billing_cycle: str = Field(
+        ..., pattern=r"^\d{4}-\d{2}$", description="Billing cycle in YYYY-MM format", examples=["2025-12"]
+    )
+    billing_date: Optional[str] = Field(
+        default=None,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Optional billing date YYYY-MM-DD; when set uses daily granularity, otherwise monthly",
+        examples=["2025-12-01"],
+    )
+    product_code: Optional[str] = Field(
+        default=None, description="Optional product code filter, e.g. ecs, rds"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Azure Cloud
 # ---------------------------------------------------------------------------

@@ -35,6 +35,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.models import (
     AlibabaAmortizedRequest,
+    AlibabaDailyProductBillRequest,
     AlibabaFetchRequest,
     AWSCostRequest,
     AzurePollRequest,
@@ -207,6 +208,73 @@ def alibaba_amortized(req: AlibabaAmortizedRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise _log_and_raise(502, "Alibaba", str(e), e)
+
+
+@app.post(
+    "/api/alibaba/billing/daily-by-product",
+    tags=["alibaba"],
+    summary="Fetch daily account bill by product",
+)
+def alibaba_daily_bill_by_product(req: AlibabaDailyProductBillRequest):
+    """
+    Fetch Alibaba Cloud account bill aggregated by product.
+
+    Uses QueryAccountBill with IsGroupByProduct=true.
+    When billing_date is provided, queries DAILY for that day; otherwise MONTHLY for the cycle.
+    Credentials are used only within this request and are never stored.
+    """
+    client = AlibabaCloudClient(
+        access_key_id=req.access_key_id,
+        access_key_secret=req.access_key_secret,
+        region_id=req.region_id,
+    )
+    try:
+        items = client.fetch_daily_account_bill_by_product(
+            billing_cycle=req.billing_cycle,
+            billing_date=req.billing_date,
+            product_code=req.product_code,
+        )
+        return {
+            "billing_cycle": req.billing_cycle,
+            "billing_date": req.billing_date,
+            "total": len(items),
+            "items": [i.model_dump() for i in items],
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise _log_and_raise(502, "Alibaba", str(e), e)
+
+
+@app.post(
+    "/api/alibaba/billing/daily-by-product/csv",
+    tags=["alibaba"],
+    summary="Download daily account bill by product as CSV",
+)
+def alibaba_daily_bill_by_product_csv(req: AlibabaDailyProductBillRequest):
+    """
+    Fetch Alibaba Cloud daily account bill aggregated by product and stream back as CSV.
+    """
+    client = AlibabaCloudClient(
+        access_key_id=req.access_key_id,
+        access_key_secret=req.access_key_secret,
+        region_id=req.region_id,
+    )
+    try:
+        items = client.fetch_daily_account_bill_by_product(
+            billing_cycle=req.billing_cycle,
+            billing_date=req.billing_date,
+            product_code=req.product_code,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise _log_and_raise(502, "Alibaba", str(e), e)
+
+    return _csv_response(
+        items,
+        f"alibaba_daily_by_product_{req.billing_date or req.billing_cycle}.csv",
+    )
 
 
 # ---------------------------------------------------------------------------
